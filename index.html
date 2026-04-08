@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Multi-function calculator with scientific operations, length, weight, and currency conversions">
+    <meta name="theme-color" content="#2d5a27">
+    <title>Multi-Function Calculator</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+    <div class="container">
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+            <span class="sun-icon">☀️</span>
+            <span class="moon-icon">🌙</span>
+        </button>
+
+        <!-- Header -->
+        <header class="header">
+            <h1>Multi-Function Calculator</h1>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="calculator">Calculator</button>
+            <button class="tab-btn" data-tab="length">Length</button>
+            <button class="tab-btn" data-tab="currency">Currency</button>
+            <button class="tab-btn" data-tab="weight">Weight</button>
+        </nav>
+
+        <!-- Tab Content -->
+        <main class="tab-content">
+            <!-- Calculator Tab -->
+            <section id="calculator" class="tab-panel active">
+                <div class="calculator">
+                    <div class="display">
+                        <div class="expression" id="expression"></div>
+                        <div class="result" id="result">0</div>
+                    </div>
+                    <div class="keypad">
+                        <!-- Scientific Functions Row 1 -->
+                        <button class="btn func" data-action="sin">sin</button>
+                        <button class="btn func" data-action="cos">cos</button>
+                        <button class="btn func" data-action="tan">tan</button>
+                        <button class="btn func" data-action="sqrt">√</button>
+                        <button class="btn func" data-action="power">xⁿ</button>
+
+                        <!-- Scientific Functions Row 2 -->
+                        <button class="btn func" data-action="square">x²</button>
+                        <button class="btn func" data-action="factorial">n!</button>
+                        <button class="btn func" data-action="percent">%</button>
+                        <button class="btn func" data-action="openParen">(</button>
+                        <button class="btn func" data-action="closeParen">)</button>
+
+                        <!-- Numbers and Operations -->
+                        <button class="btn clear" data-action="clear">AC</button>
+                        <button class="btn clear" data-action="backspace">⌫</button>
+                        <button class="btn operator" data-action="divide">÷</button>
+                        <button class="btn operator" data-action="multiply">×</button>
+                        <button class="btn operator" data-action="subtract">−</button>
+
+                        <button class="btn number" data-value="7">7</button>
+                        <button class="btn number" data-value="8">8</button>
+                        <button class="btn number" data-value="9">9</button>
+                        <button class="btn number" data-value="4">4</button>
+                        <button class="btn number" data-value="5">5</button>
+
+                        <button class="btn number" data-value="6">6</button>
+                        <button class="btn number" data-value="1">1</button>
+                        <button class="btn number" data-value="2">2</button>
+                        <button class="btn number" data-value="3">3</button>
+                        <button class="btn operator" data-action="add">+</button>
+
+                        <button class="btn number zero" data-value="0">0</button>
+                        <button class="btn number" data-value=".">.</button>
+                        <button class="btn number" data-action="negate">±</button>
+                        <button class="btn equals" data-action="equals">=</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Length Converter Tab -->
+            <section id="length" class="tab-panel">
+                <div class="converter">
+                    <h2>Length Converter</h2>
+                    <div class="converter-grid">
+                        <div class="input-group">
+                            <label for="lengthInput">Value</label>
+                            <input type="number" id="lengthInput" placeholder="Enter value" value="1">
+                        </div>
+                        <div class="select-group">
+                            <label for="lengthFrom">From</label>
+                            <select id="lengthFrom">
+                                <option value="meter" selected>Meter (m)</option>
+                                <option value="centimeter">Centimeter (cm)</option>
+                                <option value="millimeter">Millimeter (mm)</option>
+                                <option value="kilometer">Kilometer (km)</option>
+                                <option value="mile">Mile (mi)</option>
+                                <option value="inch">Inch (in)</option>
+                                <option value="foot">Foot (ft)</option>
+                                <option value="yard">Yard (yd)</option>
+                            </select>
+                        </div>
+                        <button class="swap-btn" id="swapLength" aria-label="Swap units">⇄</button>
+                        <div class="select-group">
+                            <label for="lengthTo">To</label>
+                            <select id="lengthTo">
+                                <option value="meter">Meter (m)</option>
+                                <option value="centimeter" selected>Centimeter (cm)</option>
+                                <option value="millimeter">Millimeter (mm)</option>
+                                <option value="kilometer">Kilometer (km)</option>
+                                <option value="mile">Mile (mi)</option>
+                                <option value="inch">Inch (in)</option>
+                                <option value="foot">Foot (ft)</option>
+                                <option value="yard">Yard (yd)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="result-display">
+                        <span class="result-value" id="lengthResult">100</span>
+                        <span class="result-unit" id="lengthUnit">cm</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Currency Converter Tab -->
+            <section id="currency" class="tab-panel">
+                <div class="converter">
+                    <h2>Currency Converter</h2>
+                    <div class="api-status" id="currencyStatus">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Loading rates...</span>
+                    </div>
+                    <div class="converter-grid">
+                        <div class="input-group">
+                            <label for="currencyInput">Amount</label>
+                            <input type="number" id="currencyInput" placeholder="Enter amount" value="1">
+                        </div>
+                        <div class="select-group">
+                            <label for="currencyFrom">From</label>
+                            <select id="currencyFrom">
+                                <option value="USD" selected>USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="JPY">JPY - Japanese Yen</option>
+                                <option value="INR">INR - Indian Rupee</option>
+                            </select>
+                        </div>
+                        <button class="swap-btn" id="swapCurrency" aria-label="Swap currencies">⇄</button>
+                        <div class="select-group">
+                            <label for="currencyTo">To</label>
+                            <select id="currencyTo">
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR" selected>EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="JPY">JPY - Japanese Yen</option>
+                                <option value="INR">INR - Indian Rupee</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="result-display">
+                        <span class="result-value" id="currencyResult">--</span>
+                        <span class="result-unit" id="currencyUnit">EUR</span>
+                    </div>
+                    <div class="last-updated" id="lastUpdated"></div>
+                </div>
+            </section>
+
+            <!-- Weight Converter Tab -->
+            <section id="weight" class="tab-panel">
+                <div class="converter">
+                    <h2>Weight Converter</h2>
+                    <div class="converter-grid">
+                        <div class="input-group">
+                            <label for="weightInput">Value</label>
+                            <input type="number" id="weightInput" placeholder="Enter value" value="1">
+                        </div>
+                        <div class="select-group">
+                            <label for="weightFrom">From</label>
+                            <select id="weightFrom">
+                                <option value="kilogram" selected>Kilogram (kg)</option>
+                                <option value="gram">Gram (g)</option>
+                                <option value="milligram">Milligram (mg)</option>
+                            </select>
+                        </div>
+                        <button class="swap-btn" id="swapWeight" aria-label="Swap units">⇄</button>
+                        <div class="select-group">
+                            <label for="weightTo">To</label>
+                            <select id="weightTo">
+                                <option value="kilogram">Kilogram (kg)</option>
+                                <option value="gram" selected>Gram (g)</option>
+                                <option value="milligram">Milligram (mg)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="result-display">
+                        <span class="result-value" id="weightResult">1000</span>
+                        <span class="result-unit" id="weightUnit">g</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Multi-Function Calculator © 2026</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/calculator.js"></script>
+    <script src="js/length.js"></script>
+    <script src="js/currency.js"></script>
+    <script src="js/weight.js"></script>
+    <script>
+        // Tab Navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active from all tabs and panels
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                
+                // Add active to clicked tab and corresponding panel
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // Check saved theme or system preference
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.body.dataset.theme = savedTheme;
+        } else if (prefersDark) {
+            document.body.dataset.theme = 'dark';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.body.dataset.theme;
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.body.dataset.theme = newTheme;
+            localStorage.setItem('theme', newTheme);
+        });
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
