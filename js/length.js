@@ -50,6 +50,13 @@
             return;
         }
 
+        // Length cannot be negative
+        if (value < 0) {
+            lengthResult.textContent = 'Invalid';
+            lengthUnit.textContent = '(negative)';
+            return;
+        }
+
         // Convert to meters first, then to target unit
         const inMeters = value / conversionFactors[fromUnit];
         const result = inMeters * conversionFactors[toUnit];

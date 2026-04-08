@@ -40,6 +40,13 @@
             return;
         }
 
+        // Weight cannot be negative
+        if (value < 0) {
+            weightResult.textContent = 'Invalid';
+            weightUnit.textContent = '(negative)';
+            return;
+        }
+
         // Convert to kilograms first, then to target unit
         const inKilograms = value / conversionFactors[fromUnit];
         const result = inKilograms * conversionFactors[toUnit];

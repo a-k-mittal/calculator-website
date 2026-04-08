@@ -14,16 +14,16 @@
         waitingForOperand: false
     };
 
-    // DOM Elements
-    const expressionDisplay = document.getElementById('expression');
-    const resultDisplay = document.getElementById('result');
-    const keypad = document.querySelector('.keypad');
+    // DOM Elements - will be set in init()
+    let expressionDisplay;
+    let resultDisplay;
+    let keypad;
 
     // Utility Functions
     function factorial(n) {
         if (n < 0) return NaN;
         if (n === 0 || n === 1) return 1;
-        if (n > 170) return Infinity; // Prevent overflow
+        if (n > 170) return NaN; // Too large - would overflow
         let result = 1;
         for (let i = 2; i <= n; i++) {
             result *= i;
@@ -33,7 +33,8 @@
 
     function formatNumber(num) {
         if (typeof num !== 'number' || isNaN(num)) return 'Error';
-        if (!isFinite(num)) return num > 0 ? '∞' : '-∞';
+        // Division by zero or overflow - show Error instead of infinity
+        if (!isFinite(num)) return 'Error';
         
         // Handle very large or very small numbers with scientific notation
         if (Math.abs(num) >= 1e12 || (Math.abs(num) < 1e-8 && num !== 0)) {
@@ -52,8 +53,8 @@
     }
 
     function updateDisplay() {
-        expressionDisplay.textContent = state.expression;
-        resultDisplay.textContent = state.result;
+        if (expressionDisplay) expressionDisplay.textContent = state.expression;
+        if (resultDisplay) resultDisplay.textContent = state.result;
     }
 
     // Parse and evaluate the expression safely
@@ -64,6 +65,7 @@
                 .replace(/×/g, '*')
                 .replace(/÷/g, '/')
                 .replace(/−/g, '-')
+                .replace(/\^/g, '**')
                 .replace(/π/g, Math.PI.toString())
                 .replace(/e(?![0-9])/g, Math.E.toString());
 
@@ -75,7 +77,12 @@
             evalExpr = evalExpr.replace(/\)(\d)/g, ')*$1');
             evalExpr = evalExpr.replace(/\)\(/g, ')*(');
 
-            // Validate expression - only allow safe characters
+            // Check for 0^0 (0**0) which is mathematically undefined
+            if (/(?<![1-9])0\s*\*\*\s*0(?![1-9])/.test(evalExpr) || /\b0\*\*0\b/.test(evalExpr)) {
+                return NaN;
+            }
+
+            // Validate expression - only allow safe characters (includes ** for power)
             if (!/^[0-9+\-*/().%\s]+$/.test(evalExpr)) {
                 return NaN;
             }
@@ -108,19 +115,35 @@
         switch (action) {
             case 'sin':
                 result = Math.sin(currentValue * Math.PI / 180); // Degrees
+                // Handle exact values for common angles
+                if (currentValue % 180 === 0) result = 0;
                 displayAction = `sin(${currentValue})`;
                 break;
             case 'cos':
                 result = Math.cos(currentValue * Math.PI / 180); // Degrees
+                // Handle exact values for common angles
+                if ((currentValue - 90) % 180 === 0) result = 0;
                 displayAction = `cos(${currentValue})`;
                 break;
             case 'tan':
-                result = Math.tan(currentValue * Math.PI / 180); // Degrees
+                // tan is undefined at 90°, 270°, etc. (90 + n*180)
+                if ((currentValue - 90) % 180 === 0) {
+                    result = NaN; // Undefined
+                } else {
+                    result = Math.tan(currentValue * Math.PI / 180); // Degrees
+                    // Handle exact zero at multiples of 180
+                    if (currentValue % 180 === 0) result = 0;
+                }
                 displayAction = `tan(${currentValue})`;
                 break;
             case 'sqrt':
-                result = Math.sqrt(currentValue);
-                displayAction = `√(${currentValue})`;
+                if (currentValue < 0) {
+                    result = NaN; // Square root of negative is not real
+                    displayAction = `√(${currentValue}) - Invalid`;
+                } else {
+                    result = Math.sqrt(currentValue);
+                    displayAction = `√(${currentValue})`;
+                }
                 break;
             case 'square':
                 result = currentValue * currentValue;
@@ -129,10 +152,14 @@
             case 'factorial':
                 if (currentValue < 0 || !Number.isInteger(currentValue)) {
                     result = NaN;
+                    displayAction = currentValue < 0 ? `${currentValue}! - Invalid` : `${currentValue}! - Integer only`;
+                } else if (currentValue > 170) {
+                    result = NaN;
+                    displayAction = `${currentValue}! - Too large`;
                 } else {
                     result = factorial(currentValue);
+                    displayAction = `${currentValue}!`;
                 }
-                displayAction = `${currentValue}!`;
                 break;
             case 'percent':
                 result = currentValue / 100;
@@ -166,15 +193,26 @@
         // Number or decimal input
         if (value !== undefined) {
             if (state.waitingForOperand) {
-                state.expression = '';
+                // Only clear expression if it shows a completed calculation (contains '=')
+                if (state.expression.includes('=')) {
+                    state.expression = '';
+                    state.lastResult = null; // Clear previous result when starting fresh
+                }
                 state.result = value === '.' ? '0.' : value;
                 state.waitingForOperand = false;
             } else {
                 if (value === '.' && state.result.includes('.')) return;
-                if (state.result === '0' && value !== '.') {
+                // Handle decimal after just minus sign: "-" + "." = "-0."
+                if (value === '.' && state.result === '-') {
+                    state.result = '-0.';
+                } else if (state.result === '0' && value !== '.') {
                     state.result = value;
                 } else {
                     state.result += value;
+                }
+                // Remove leading zeros (but keep "0." and "-0." for decimals)
+                if (!state.result.includes('.') && state.result.length > 1 && state.result !== '-') {
+                    state.result = state.result.replace(/^(-?)0+/, '$1') || '0';
                 }
             }
             updateDisplay();
@@ -191,7 +229,12 @@
                 break;
 
             case 'backspace':
-                if (state.result.length > 1) {
+                // If just finished a calculation, clear for new input
+                if (state.waitingForOperand) {
+                    state.expression = '';
+                    state.result = '0';
+                    state.waitingForOperand = false;
+                } else if (state.result.length > 1) {
                     state.result = state.result.slice(0, -1);
                 } else {
                     state.result = '0';
@@ -203,18 +246,45 @@
             case 'multiply':
             case 'divide':
                 const operators = { add: '+', subtract: '−', multiply: '×', divide: '÷' };
-                if (state.expression && !state.waitingForOperand) {
+                
+                // Special case: after power (^), minus should negate the exponent
+                if (action === 'subtract' && state.expression.endsWith('^') && state.waitingForOperand) {
+                    state.result = '-';
+                    state.waitingForOperand = false;
+                    break;
+                }
+                
+                // Special case: at the start, minus should start a negative number
+                if (action === 'subtract' && !state.expression && state.result === '0') {
+                    state.result = '-';
+                    break;
+                }
+                
+                // If already waiting for operand, replace the previous operator
+                if (state.waitingForOperand && state.expression) {
+                    // If expression shows a completed calculation (contains '='), start fresh with result
+                    if (state.expression.includes('=')) {
+                        state.expression = state.result + ' ' + operators[action] + ' ';
+                    }
+                    // Don't replace ^ with operator - that would break power
+                    else if (!state.expression.endsWith('^')) {
+                        state.expression = state.expression.replace(/[+−×÷]\s*$/, operators[action] + ' ');
+                    }
+                } else if (state.expression && !state.waitingForOperand) {
                     // Chain operations
                     state.expression += state.result + ' ' + operators[action] + ' ';
-                } else if (state.lastResult !== null) {
-                    state.expression = formatNumber(state.lastResult) + ' ' + operators[action] + ' ';
                 } else {
+                    // Start new expression with current result (not lastResult)
                     state.expression = state.result + ' ' + operators[action] + ' ';
                 }
                 state.waitingForOperand = true;
                 break;
 
             case 'equals':
+                // If already showing a result (expression contains '='), do nothing
+                if (state.expression && state.expression.includes('=')) {
+                    break;
+                }
                 if (state.expression) {
                     const fullExpression = state.expression + state.result;
                     const evalResult = evaluateExpression(fullExpression);
@@ -235,14 +305,29 @@
                 break;
 
             case 'closeParen':
-                state.result += ')';
+                // Count open and close parens to ensure balance
+                const fullExpr = state.expression + state.result;
+                const openCount = (fullExpr.match(/\(/g) || []).length;
+                const closeCount = (fullExpr.match(/\)/g) || []).length;
+                // Only allow closing paren if there's an unmatched opening paren
+                if (openCount > closeCount) {
+                    state.result += ')';
+                }
                 break;
 
             case 'power':
-                state.expression = state.result + '^';
+                // Append current result to expression with power operator
+                if (state.expression && !state.waitingForOperand) {
+                    // If there's an existing expression, append the result first
+                    state.expression += state.result + '^';
+                } else if (state.expression && state.waitingForOperand) {
+                    // Replace operator with power - remove trailing operator
+                    state.expression = state.expression.replace(/[+−×÷]\s*$/, '') + state.result + '^';
+                } else {
+                    state.expression = state.result + '^';
+                }
                 state.result = '0';
                 state.waitingForOperand = true;
-                // For power, we'll handle it specially
                 break;
 
             case 'sin':
@@ -265,12 +350,18 @@
 
     // Keyboard support
     function handleKeyboard(event) {
-        const key = event.key;
-        
-        // Prevent default for calculator keys
-        if (/^[0-9+\-*/().=%]$/.test(key) || ['Enter', 'Backspace', 'Escape', 'Delete'].includes(key)) {
-            event.preventDefault();
+        // Only handle keyboard when calculator tab is active
+        const calculatorTab = document.getElementById('calculator');
+        if (!calculatorTab || !calculatorTab.classList.contains('active')) {
+            return; // Not on calculator tab, let other inputs handle keyboard
         }
+        
+        // Don't intercept when user is typing in an input field
+        if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+            return;
+        }
+        
+        const key = event.key;
 
         // Map keyboard to actions
         const keyMap = {
@@ -301,7 +392,10 @@
 
         const mapping = keyMap[key];
         if (mapping) {
-            // Create a fake event
+            // Prevent default browser behavior for calculator keys
+            event.preventDefault();
+            
+            // Create a fake event to trigger button click handler
             const fakeButton = document.createElement('button');
             fakeButton.classList.add('btn');
             if (mapping.value !== undefined) {
@@ -316,8 +410,21 @@
 
     // Initialize
     function init() {
-        keypad.addEventListener('click', handleButtonClick);
+        // Select DOM elements after DOM is ready
+        expressionDisplay = document.getElementById('expression');
+        resultDisplay = document.getElementById('result');
+        keypad = document.querySelector('.keypad');
+        
+        // Attach keyboard listener first (works globally)
         document.addEventListener('keydown', handleKeyboard);
+        
+        // Attach click listener to keypad if it exists
+        if (keypad) {
+            keypad.addEventListener('click', handleButtonClick);
+        } else {
+            console.error('Calculator keypad not found');
+        }
+        
         updateDisplay();
     }
 

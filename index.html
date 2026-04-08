@@ -73,29 +73,32 @@
                         <button class="btn func" data-action="openParen">(</button>
                         <button class="btn func" data-action="closeParen">)</button>
 
-                        <!-- Numbers and Operations -->
-                        <button class="btn clear" data-action="clear">AC</button>
-                        <button class="btn clear" data-action="backspace">⌫</button>
-                        <button class="btn operator" data-action="divide">÷</button>
-                        <button class="btn operator" data-action="multiply">×</button>
-                        <button class="btn operator" data-action="subtract">−</button>
-
+                        <!-- Row 3: Numbers and Operations -->
                         <button class="btn number" data-value="7">7</button>
                         <button class="btn number" data-value="8">8</button>
                         <button class="btn number" data-value="9">9</button>
+                        <button class="btn operator" data-action="divide">÷</button>
+                        <button class="btn clear" data-action="clear">AC</button>
+
+                        <!-- Row 4 -->
                         <button class="btn number" data-value="4">4</button>
                         <button class="btn number" data-value="5">5</button>
-
                         <button class="btn number" data-value="6">6</button>
+                        <button class="btn operator" data-action="multiply">×</button>
+                        <button class="btn clear" data-action="backspace">⌫</button>
+
+                        <!-- Row 5 -->
                         <button class="btn number" data-value="1">1</button>
                         <button class="btn number" data-value="2">2</button>
                         <button class="btn number" data-value="3">3</button>
-                        <button class="btn operator" data-action="add">+</button>
+                        <button class="btn operator" data-action="subtract">−</button>
+                        <button class="btn func" data-action="negate">±</button>
 
+                        <!-- Row 6 -->
                         <button class="btn number zero" data-value="0">0</button>
                         <button class="btn number" data-value=".">.</button>
-                        <button class="btn number" data-action="negate">±</button>
                         <button class="btn equals" data-action="equals">=</button>
+                        <button class="btn operator" data-action="add">+</button>
                     </div>
                 </div>
             </section>
@@ -107,7 +110,7 @@
                     <div class="converter-grid">
                         <div class="input-group">
                             <label for="lengthInput">Value</label>
-                            <input type="number" id="lengthInput" placeholder="Enter value" value="1">
+                            <input type="number" id="lengthInput" placeholder="Enter value" value="1" inputmode="decimal" step="any" min="0" max="999999999999">
                         </div>
                         <div class="select-group">
                             <label for="lengthFrom">From</label>
@@ -155,7 +158,7 @@
                     <div class="converter-grid">
                         <div class="input-group">
                             <label for="currencyInput">Amount</label>
-                            <input type="number" id="currencyInput" placeholder="Enter amount" value="1">
+                            <input type="number" id="currencyInput" placeholder="Enter amount" value="1" inputmode="decimal" step="any" min="0" max="999999999999">
                         </div>
                         <div class="select-group">
                             <label for="currencyFrom">From</label>
@@ -194,7 +197,7 @@
                     <div class="converter-grid">
                         <div class="input-group">
                             <label for="weightInput">Value</label>
-                            <input type="number" id="weightInput" placeholder="Enter value" value="1">
+                            <input type="number" id="weightInput" placeholder="Enter value" value="1" inputmode="decimal" step="any" min="0" max="999999999999">
                         </div>
                         <div class="select-group">
                             <label for="weightFrom">From</label>
