@@ -30,21 +30,21 @@
         INR: { USD: 0.012, EUR: 0.011, GBP: 0.0095, JPY: 1.80, INR: 1 }
     };
 
-    // DOM Elements
-    const currencyInput = document.getElementById('currencyInput');
-    const currencyFrom = document.getElementById('currencyFrom');
-    const currencyTo = document.getElementById('currencyTo');
-    const currencyResult = document.getElementById('currencyResult');
-    const currencyUnit = document.getElementById('currencyUnit');
-    const swapBtn = document.getElementById('swapCurrency');
-    const statusDot = document.querySelector('#currencyStatus .status-dot');
-    const statusText = document.querySelector('#currencyStatus .status-text');
-    const lastUpdated = document.getElementById('lastUpdated');
+    // DOM Elements - initialized in init()
+    let currencyInput;
+    let currencyFrom;
+    let currencyTo;
+    let currencyResult;
+    let currencyUnit;
+    let swapBtn;
+    let statusDot;
+    let statusText;
+    let lastUpdated;
 
     // Update status indicator
     function updateStatus(status, message) {
-        statusDot.className = 'status-dot ' + status;
-        statusText.textContent = message;
+        if (statusDot) statusDot.className = 'status-dot ' + status;
+        if (statusText) statusText.textContent = message;
     }
 
     // Format currency result
@@ -91,7 +91,7 @@
             
             // Show last updated time
             const now = new Date();
-            lastUpdated.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+            if (lastUpdated) lastUpdated.textContent = `Last updated: ${now.toLocaleTimeString()}`;
 
             return data.rates;
         } catch (error) {
@@ -104,20 +104,25 @@
                 if (parsed.base === baseCurrency) {
                     updateStatus('offline', 'Using cached rates');
                     const cacheDate = new Date(parsed.timestamp);
-                    lastUpdated.textContent = `Cached from: ${cacheDate.toLocaleDateString()}`;
+                    if (lastUpdated) lastUpdated.textContent = `Cached from: ${cacheDate.toLocaleDateString()}`;
                     return parsed.rates;
                 }
             }
 
             // Use fallback rates
             updateStatus('offline', 'Using offline rates');
-            lastUpdated.textContent = 'Offline mode - rates may be outdated';
+            if (lastUpdated) lastUpdated.textContent = 'Offline mode - rates may be outdated';
             return null;
         }
     }
 
     // Convert currency
     async function convert() {
+        if (!currencyInput || !currencyFrom || !currencyTo || !currencyResult || !currencyUnit) {
+            console.error('Currency converter DOM elements not found');
+            return;
+        }
+        
         const amount = parseFloat(currencyInput.value);
         const fromCurrency = currencyFrom.value;
         const toCurrency = currencyTo.value;
@@ -185,6 +190,17 @@
 
     // Event listeners
     function init() {
+        // Select DOM elements
+        currencyInput = document.getElementById('currencyInput');
+        currencyFrom = document.getElementById('currencyFrom');
+        currencyTo = document.getElementById('currencyTo');
+        currencyResult = document.getElementById('currencyResult');
+        currencyUnit = document.getElementById('currencyUnit');
+        swapBtn = document.getElementById('swapCurrency');
+        statusDot = document.querySelector('#currencyStatus .status-dot');
+        statusText = document.querySelector('#currencyStatus .status-text');
+        lastUpdated = document.getElementById('lastUpdated');
+        
         const debouncedConvert = debounce(convert, 300);
         
         currencyInput.addEventListener('input', debouncedConvert);
