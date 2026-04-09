@@ -30,6 +30,39 @@
 </head>
 <body>
     <div class="container">
+        <!-- Theme Controls -->
+        <div class="theme-controls">
+            <div class="color-picker">
+                <button class="color-picker-btn" id="colorPickerBtn" aria-label="Choose color theme">🎨</button>
+                <div class="color-dropdown" id="colorDropdown">
+                    <button class="color-option active" data-color="forest">
+                        <span class="color-swatch forest"></span>
+                        Forest
+                    </button>
+                    <button class="color-option" data-color="ocean">
+                        <span class="color-swatch ocean"></span>
+                        Ocean
+                    </button>
+                    <button class="color-option" data-color="sunset">
+                        <span class="color-swatch sunset"></span>
+                        Sunset
+                    </button>
+                    <button class="color-option" data-color="rose">
+                        <span class="color-swatch rose"></span>
+                        Rose
+                    </button>
+                    <button class="color-option" data-color="lavender">
+                        <span class="color-swatch lavender"></span>
+                        Lavender
+                    </button>
+                    <button class="color-option" data-color="slate">
+                        <span class="color-swatch slate"></span>
+                        Slate
+                    </button>
+                </div>
+            </div>
+        </div>
+        
         <!-- Theme Toggle -->
         <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
             <span class="sun-icon">☀️</span>
@@ -318,6 +351,58 @@
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             document.body.dataset.theme = newTheme;
             localStorage.setItem('theme', newTheme);
+        });
+
+        // Color Theme Picker
+        const colorPickerBtn = document.getElementById('colorPickerBtn');
+        const colorDropdown = document.getElementById('colorDropdown');
+        const colorOptions = document.querySelectorAll('.color-option');
+        
+        // Load saved color theme
+        const savedColor = localStorage.getItem('colorTheme') || 'forest';
+        if (savedColor !== 'forest') {
+            document.body.dataset.color = savedColor;
+        }
+        // Update active state
+        colorOptions.forEach(opt => {
+            opt.classList.toggle('active', opt.dataset.color === savedColor);
+        });
+
+        // Toggle dropdown
+        colorPickerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            colorDropdown.classList.toggle('show');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!colorDropdown.contains(e.target) && e.target !== colorPickerBtn) {
+                colorDropdown.classList.remove('show');
+            }
+        });
+
+        // Handle color selection
+        colorOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const color = option.dataset.color;
+                
+                // Update body data attribute
+                if (color === 'forest') {
+                    delete document.body.dataset.color;
+                } else {
+                    document.body.dataset.color = color;
+                }
+                
+                // Update active state
+                colorOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                // Save to localStorage
+                localStorage.setItem('colorTheme', color);
+                
+                // Close dropdown
+                colorDropdown.classList.remove('show');
+            });
         });
 
         // Register Service Worker for PWA
