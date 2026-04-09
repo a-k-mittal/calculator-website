@@ -49,10 +49,11 @@
 
     // Format currency result
     function formatCurrency(value, currency) {
+        const decimals = currency === 'JPY' ? 0 : 2;
         const formatter = new Intl.NumberFormat('en-US', {
             style: 'decimal',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: currency === 'JPY' ? 0 : 2
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
         });
         return formatter.format(value);
     }
