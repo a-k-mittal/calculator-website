@@ -11,13 +11,18 @@
         expression: '',
         result: '0',
         lastResult: null,
-        waitingForOperand: false
+        waitingForOperand: false,
+        history: [] // Store calculation history
     };
 
     // DOM Elements - will be set in init()
     let expressionDisplay;
     let resultDisplay;
+    let previewDisplay;
     let keypad;
+    let copyBtn;
+    let historyList;
+    let clearHistoryBtn;
 
     // Utility Functions
     function factorial(n) {
@@ -55,6 +60,140 @@
     function updateDisplay() {
         if (expressionDisplay) expressionDisplay.textContent = state.expression;
         if (resultDisplay) resultDisplay.textContent = state.result;
+        
+        // Update real-time preview
+        updatePreview();
+    }
+
+    // Real-time preview - show calculation result as user types
+    function updatePreview() {
+        if (!previewDisplay) return;
+        
+        // Don't show preview if expression already contains '=' (completed)
+        if (state.expression.includes('=') || !state.expression) {
+            previewDisplay.textContent = '';
+            return;
+        }
+        
+        // Try to evaluate current expression + result
+        const fullExpr = state.expression + state.result;
+        if (fullExpr && fullExpr !== '0') {
+            const previewResult = evaluateExpression(fullExpr);
+            if (!isNaN(previewResult) && isFinite(previewResult)) {
+                previewDisplay.textContent = '= ' + formatNumber(previewResult);
+            } else {
+                previewDisplay.textContent = '';
+            }
+        } else {
+            previewDisplay.textContent = '';
+        }
+    }
+
+    // History functions
+    function addToHistory(expression, result) {
+        // Don't add invalid results
+        if (result === 'Error' || !expression) return;
+        
+        state.history.unshift({ expression, result, timestamp: Date.now() });
+        
+        // Keep only last 20 calculations
+        if (state.history.length > 20) {
+            state.history.pop();
+        }
+        
+        // Save to localStorage
+        try {
+            localStorage.setItem('calcHistory', JSON.stringify(state.history));
+        } catch (e) {
+            console.warn('Could not save history to localStorage');
+        }
+        
+        renderHistory();
+    }
+
+    function loadHistory() {
+        try {
+            const saved = localStorage.getItem('calcHistory');
+            if (saved) {
+                state.history = JSON.parse(saved);
+            }
+        } catch (e) {
+            state.history = [];
+        }
+        renderHistory();
+    }
+
+    function clearHistory() {
+        state.history = [];
+        try {
+            localStorage.removeItem('calcHistory');
+        } catch (e) {}
+        renderHistory();
+    }
+
+    function renderHistory() {
+        if (!historyList) return;
+        
+        if (state.history.length === 0) {
+            historyList.innerHTML = '<p class="history-empty">No calculations yet</p>';
+            return;
+        }
+        
+        historyList.innerHTML = state.history.map((item, index) => `
+            <div class="history-item" data-index="${index}">
+                <div class="history-expr">${item.expression}</div>
+                <div class="history-result">${item.result}</div>
+            </div>
+        `).join('');
+    }
+
+    function handleHistoryClick(event) {
+        const historyItem = event.target.closest('.history-item');
+        if (historyItem) {
+            const index = parseInt(historyItem.dataset.index);
+            const item = state.history[index];
+            if (item) {
+                // Load the result into the calculator
+                state.result = item.result;
+                state.expression = '';
+                state.waitingForOperand = true;
+                updateDisplay();
+            }
+        }
+    }
+
+    // Copy result to clipboard
+    async function copyResult() {
+        const textToCopy = state.result;
+        try {
+            await navigator.clipboard.writeText(textToCopy);
+            // Visual feedback
+            if (copyBtn) {
+                copyBtn.textContent = '✓';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = '📋';
+                    copyBtn.classList.remove('copied');
+                }, 1500);
+            }
+        } catch (err) {
+            // Fallback for older browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = textToCopy;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            if (copyBtn) {
+                copyBtn.textContent = '✓';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = '📋';
+                    copyBtn.classList.remove('copied');
+                }, 1500);
+            }
+        }
     }
 
     // Parse and evaluate the expression safely
@@ -296,6 +435,9 @@
                     state.result = formatNumber(evalResult);
                     state.lastResult = evalResult;
                     state.waitingForOperand = true;
+                    
+                    // Add to history
+                    addToHistory(fullExpression, state.result);
                 }
                 break;
 
@@ -435,7 +577,11 @@
         // Select DOM elements after DOM is ready
         expressionDisplay = document.getElementById('expression');
         resultDisplay = document.getElementById('result');
+        previewDisplay = document.getElementById('preview');
         keypad = document.querySelector('.keypad');
+        copyBtn = document.getElementById('copyBtn');
+        historyList = document.getElementById('historyList');
+        clearHistoryBtn = document.getElementById('clearHistory');
         
         // Attach keyboard listener first (works globally)
         document.addEventListener('keydown', handleKeyboard);
@@ -446,6 +592,22 @@
         } else {
             console.error('Calculator keypad not found');
         }
+        
+        // Copy button listener
+        if (copyBtn) {
+            copyBtn.addEventListener('click', copyResult);
+        }
+        
+        // History listeners
+        if (historyList) {
+            historyList.addEventListener('click', handleHistoryClick);
+        }
+        if (clearHistoryBtn) {
+            clearHistoryBtn.addEventListener('click', clearHistory);
+        }
+        
+        // Load saved history
+        loadHistory();
         
         updateDisplay();
     }

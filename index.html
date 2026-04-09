@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Free online multi-function calculator with scientific operations, length converter, weight converter, and real-time currency conversion. Works offline as a PWA.">
-    <meta name="keywords" content="calculator, scientific calculator, length converter, weight converter, currency converter, unit converter, online calculator, PWA calculator">
+    <meta name="description" content="Free online multi-function calculator with scientific operations, length converter, weight converter, temperature converter, and real-time currency conversion. Features calculation history, copy results, and works offline as a PWA.">
+    <meta name="keywords" content="calculator, scientific calculator, length converter, weight converter, temperature converter, currency converter, unit converter, online calculator, PWA calculator, celsius fahrenheit kelvin">
     <meta name="author" content="a-k-mittal">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#2d5a27">
@@ -12,8 +12,8 @@
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://a-k-mittal.github.io/calculator-website/">
-    <meta property="og:title" content="Multi-Function Calculator - Scientific, Length, Weight & Currency">
-    <meta property="og:description" content="Free online calculator with scientific operations, length, weight, and real-time currency conversions. Beautiful neumorphism design, works offline.">
+    <meta property="og:title" content="Multi-Function Calculator - Scientific, Length, Weight, Temperature & Currency">
+    <meta property="og:description" content="Free online calculator with scientific operations, length, weight, temperature, and real-time currency conversions. Beautiful neumorphism design, works offline.">
     <meta property="og:image" content="https://a-k-mittal.github.io/calculator-website/icons/icon-512.png">
     
     <!-- Twitter Card -->
@@ -21,7 +21,7 @@
     <meta name="twitter:title" content="Multi-Function Calculator">
     <meta name="twitter:description" content="Scientific calculator with unit and currency conversions. Works offline!">
     
-    <title>Multi-Function Calculator - Scientific, Length, Weight & Currency Converter</title>
+    <title>Multi-Function Calculator - Scientific, Length, Weight, Temperature & Currency Converter</title>
     <link rel="canonical" href="https://a-k-mittal.github.io/calculator-website/">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="manifest" href="manifest.json">
@@ -47,6 +47,7 @@
             <button class="tab-btn" data-tab="length">Length</button>
             <button class="tab-btn" data-tab="currency">Currency</button>
             <button class="tab-btn" data-tab="weight">Weight</button>
+            <button class="tab-btn" data-tab="temperature">Temp</button>
         </nav>
 
         <!-- Tab Content -->
@@ -56,7 +57,11 @@
                 <div class="calculator">
                     <div class="display">
                         <div class="expression" id="expression"></div>
-                        <div class="result" id="result">0</div>
+                        <div class="preview" id="preview"></div>
+                        <div class="result-row">
+                            <div class="result" id="result">0</div>
+                            <button class="copy-btn" id="copyBtn" title="Copy result">📋</button>
+                        </div>
                     </div>
                     <div class="keypad">
                         <!-- Scientific Functions Row 1 -->
@@ -99,6 +104,17 @@
                         <button class="btn number" data-value=".">.</button>
                         <button class="btn equals" data-action="equals">=</button>
                         <button class="btn operator" data-action="add">+</button>
+                    </div>
+                    
+                    <!-- History Panel -->
+                    <div class="history-panel">
+                        <div class="history-header">
+                            <h3>History</h3>
+                            <button class="history-clear" id="clearHistory">Clear</button>
+                        </div>
+                        <div class="history-list" id="historyList">
+                            <p class="history-empty">No calculations yet</p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -223,6 +239,40 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Temperature Converter Tab -->
+            <section id="temperature" class="tab-panel">
+                <div class="converter">
+                    <h2>Temperature Converter</h2>
+                    <div class="converter-grid">
+                        <div class="input-group">
+                            <label for="tempInput">Value</label>
+                            <input type="number" id="tempInput" placeholder="Enter value" value="0" inputmode="decimal" step="any">
+                        </div>
+                        <div class="select-group">
+                            <label for="tempFrom">From</label>
+                            <select id="tempFrom">
+                                <option value="celsius" selected>Celsius (°C)</option>
+                                <option value="fahrenheit">Fahrenheit (°F)</option>
+                                <option value="kelvin">Kelvin (K)</option>
+                            </select>
+                        </div>
+                        <button class="swap-btn" id="swapTemp" aria-label="Swap units">⇄</button>
+                        <div class="select-group">
+                            <label for="tempTo">To</label>
+                            <select id="tempTo">
+                                <option value="celsius">Celsius (°C)</option>
+                                <option value="fahrenheit" selected>Fahrenheit (°F)</option>
+                                <option value="kelvin">Kelvin (K)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="result-display">
+                        <span class="result-value" id="tempResult">32</span>
+                        <span class="result-unit" id="tempUnit">°F</span>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <!-- Footer -->
@@ -236,6 +286,7 @@
     <script src="js/length.js"></script>
     <script src="js/currency.js"></script>
     <script src="js/weight.js"></script>
+    <script src="js/temperature.js"></script>
     <script>
         // Tab Navigation
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -277,6 +328,45 @@
                     .catch(err => console.log('Service Worker registration failed:', err));
             });
         }
+
+        // Swipe Gestures for Tab Navigation
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const tabContent = document.querySelector('.tab-content');
+        const tabs = ['calculator', 'length', 'currency', 'weight', 'temperature'];
+
+        function getCurrentTabIndex() {
+            const activeTab = document.querySelector('.tab-btn.active');
+            return tabs.indexOf(activeTab.dataset.tab);
+        }
+
+        function switchToTab(index) {
+            if (index >= 0 && index < tabs.length) {
+                const tabBtn = document.querySelector(`[data-tab="${tabs[index]}"]`);
+                if (tabBtn) tabBtn.click();
+            }
+        }
+
+        tabContent.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        tabContent.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                const currentIndex = getCurrentTabIndex();
+                if (diff > 0) {
+                    // Swipe left - next tab
+                    switchToTab(currentIndex + 1);
+                } else {
+                    // Swipe right - previous tab
+                    switchToTab(currentIndex - 1);
+                }
+            }
+        }, { passive: true });
     </script>
 </body>
 </html>
