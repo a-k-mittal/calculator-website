@@ -255,8 +255,10 @@ body[data-theme="dark"] .moon-icon {
     box-shadow: var(--neu-shadow);
 }
 
-.btn:active {
+.btn:active,
+.btn.pressed {
     box-shadow: var(--neu-shadow-pressed);
+    transform: scale(0.95);
 }
 
 .btn.func {

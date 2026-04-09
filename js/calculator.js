@@ -285,8 +285,12 @@
                 if (state.expression && state.expression.includes('=')) {
                     break;
                 }
-                if (state.expression) {
-                    const fullExpression = state.expression + state.result;
+                
+                // Build full expression
+                const fullExpression = state.expression ? state.expression + state.result : state.result;
+                
+                // Only evaluate if there's something to evaluate
+                if (fullExpression && fullExpression !== '0') {
                     const evalResult = evaluateExpression(fullExpression);
                     state.expression = fullExpression + ' =';
                     state.result = formatNumber(evalResult);
@@ -394,6 +398,24 @@
         if (mapping) {
             // Prevent default browser behavior for calculator keys
             event.preventDefault();
+            
+            // Find the actual button in the UI and simulate press
+            let targetButton = null;
+            if (mapping.value !== undefined) {
+                targetButton = keypad.querySelector(`[data-value="${mapping.value}"]`);
+            }
+            if (mapping.action !== undefined) {
+                targetButton = keypad.querySelector(`[data-action="${mapping.action}"]`);
+            }
+            
+            // Add visual feedback if button found
+            if (targetButton) {
+                targetButton.classList.add('pressed');
+                // Remove pressed class after short delay
+                setTimeout(() => {
+                    targetButton.classList.remove('pressed');
+                }, 100);
+            }
             
             // Create a fake event to trigger button click handler
             const fakeButton = document.createElement('button');
