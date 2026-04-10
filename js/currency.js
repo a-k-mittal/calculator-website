@@ -11,24 +11,61 @@
     // Using the free tier of ExchangeRate-API (no API key required for basic usage)
     const API_BASE_URL = 'https://api.exchangerate-api.com/v4/latest/';
     
-    // Cache for exchange rates
-    let ratesCache = {
-        base: null,
-        rates: null,
-        timestamp: null
-    };
+    // LocalStorage key for storing all currency rates
+    const STORAGE_KEY = 'currencyRatesAll';
+    
+    // In-memory cache for exchange rates (per base currency)
+    let ratesCache = {};
 
     // Cache duration: 1 hour (in milliseconds)
     const CACHE_DURATION = 60 * 60 * 1000;
+    
+    // Track if we're in offline mode
+    let isOfflineMode = false;
 
-    // Fallback rates (approximate, for offline use)
-    const fallbackRates = {
+    // Default fallback rates (used only if no stored rates available)
+    const defaultFallbackRates = {
         USD: { USD: 1, EUR: 0.92, GBP: 0.79, JPY: 149.50, INR: 83.12 },
         EUR: { USD: 1.09, EUR: 1, GBP: 0.86, JPY: 162.89, INR: 90.56 },
         GBP: { USD: 1.27, EUR: 1.16, GBP: 1, JPY: 189.24, INR: 105.19 },
         JPY: { USD: 0.0067, EUR: 0.0061, GBP: 0.0053, JPY: 1, INR: 0.56 },
         INR: { USD: 0.012, EUR: 0.011, GBP: 0.0095, JPY: 1.80, INR: 1 }
     };
+    
+    // Load stored rates from localStorage on startup
+    function loadStoredRates() {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                ratesCache = JSON.parse(stored);
+            }
+        } catch (e) {
+            console.error('Failed to load stored rates:', e);
+            ratesCache = {};
+        }
+    }
+    
+    // Save rates to localStorage
+    function saveRatesToStorage() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(ratesCache));
+        } catch (e) {
+            console.error('Failed to save rates to storage:', e);
+        }
+    }
+    
+    // Get the most recent stored timestamp for display
+    function getMostRecentStoredDate() {
+        let mostRecent = null;
+        for (const base in ratesCache) {
+            if (ratesCache[base]?.timestamp) {
+                if (!mostRecent || ratesCache[base].timestamp > mostRecent) {
+                    mostRecent = ratesCache[base].timestamp;
+                }
+            }
+        }
+        return mostRecent ? new Date(mostRecent) : null;
+    }
 
     // DOM Elements - initialized in init()
     let currencyInput;
@@ -61,11 +98,17 @@
     // Fetch exchange rates from API
     async function fetchRates(baseCurrency) {
         try {
-            // Check cache first
-            if (ratesCache.base === baseCurrency && 
-                ratesCache.timestamp && 
-                Date.now() - ratesCache.timestamp < CACHE_DURATION) {
-                return ratesCache.rates;
+            // Check if we're offline first
+            if (!navigator.onLine) {
+                throw new Error('No internet connection');
+            }
+
+            // Check in-memory cache first (only use if online - to show correct status)
+            const cached = ratesCache[baseCurrency];
+            if (cached && cached.timestamp && Date.now() - cached.timestamp < CACHE_DURATION) {
+                isOfflineMode = false;
+                updateStatus('online', 'Rates up to date');
+                return cached.rates;
             }
 
             updateStatus('', 'Fetching rates...');
@@ -78,16 +121,16 @@
 
             const data = await response.json();
             
-            // Update cache
-            ratesCache = {
-                base: baseCurrency,
+            // Update cache for this base currency
+            ratesCache[baseCurrency] = {
                 rates: data.rates,
                 timestamp: Date.now()
             };
 
-            // Save to localStorage for offline access
-            localStorage.setItem('currencyRates', JSON.stringify(ratesCache));
+            // Save all rates to localStorage for offline access
+            saveRatesToStorage();
 
+            isOfflineMode = false;
             updateStatus('online', 'Rates updated');
             
             // Show last updated time
@@ -98,23 +141,58 @@
         } catch (error) {
             console.error('Failed to fetch rates:', error);
             
-            // Try to load from localStorage
-            const cached = localStorage.getItem('currencyRates');
-            if (cached) {
-                const parsed = JSON.parse(cached);
-                if (parsed.base === baseCurrency) {
-                    updateStatus('offline', 'Using cached rates');
-                    const cacheDate = new Date(parsed.timestamp);
-                    if (lastUpdated) lastUpdated.textContent = `Cached from: ${cacheDate.toLocaleDateString()}`;
-                    return parsed.rates;
+            // Try to use stored rates for this base currency
+            const storedForBase = ratesCache[baseCurrency];
+            if (storedForBase && storedForBase.rates) {
+                isOfflineMode = true;
+                updateStatus('offline', 'Offline - using last known rates');
+                const cacheDate = new Date(storedForBase.timestamp);
+                if (lastUpdated) {
+                    lastUpdated.textContent = `Offline: rates from ${cacheDate.toLocaleDateString()} ${cacheDate.toLocaleTimeString()}`;
                 }
+                return storedForBase.rates;
+            }
+            
+            // Try to compute rate from other stored rates
+            const computedRate = tryComputeRateFromStored(baseCurrency);
+            if (computedRate) {
+                isOfflineMode = true;
+                updateStatus('offline', 'Offline - using last known rates');
+                const recentDate = getMostRecentStoredDate();
+                if (lastUpdated && recentDate) {
+                    lastUpdated.textContent = `Offline: rates from ${recentDate.toLocaleDateString()} ${recentDate.toLocaleTimeString()}`;
+                }
+                return computedRate;
             }
 
-            // Use fallback rates
-            updateStatus('offline', 'Using offline rates');
-            if (lastUpdated) lastUpdated.textContent = 'Offline mode - rates may be outdated';
+            // Last resort: use default hardcoded fallback rates
+            isOfflineMode = true;
+            updateStatus('offline', 'Offline - using default rates');
+            if (lastUpdated) lastUpdated.textContent = 'Offline: using approximate default rates';
             return null;
         }
+    }
+    
+    // Try to compute rates from other stored bases (e.g., if we have USD rates, compute EUR rates)
+    function tryComputeRateFromStored(baseCurrency) {
+        // Look for any stored base currency that has rates for our target
+        for (const storedBase in ratesCache) {
+            const storedData = ratesCache[storedBase];
+            if (!storedData || !storedData.rates) continue;
+            
+            // Check if this stored base has a rate for our baseCurrency
+            const baseToStoredRate = storedData.rates[baseCurrency];
+            if (baseToStoredRate && baseToStoredRate > 0) {
+                // We can compute: baseCurrency -> X = (storedBase -> X) / (storedBase -> baseCurrency)
+                const computedRates = {};
+                for (const currency in storedData.rates) {
+                    computedRates[currency] = storedData.rates[currency] / baseToStoredRate;
+                }
+                computedRates[baseCurrency] = 1;
+                return computedRates;
+            }
+        }
+        return null;
     }
 
     // Convert currency
@@ -148,10 +226,15 @@
             if (rates && rates[toCurrency]) {
                 result = amount * rates[toCurrency];
             } else {
-                // Use fallback rates
-                const rate = fallbackRates[fromCurrency]?.[toCurrency];
+                // Use default fallback rates as last resort
+                const rate = defaultFallbackRates[fromCurrency]?.[toCurrency];
                 if (rate) {
                     result = amount * rate;
+                    if (!isOfflineMode) {
+                        isOfflineMode = true;
+                        updateStatus('offline', 'Offline - using default rates');
+                        if (lastUpdated) lastUpdated.textContent = 'Offline: using approximate default rates';
+                    }
                 } else {
                     currencyResult.textContent = 'Error';
                     currencyUnit.textContent = toCurrency;
@@ -191,6 +274,9 @@
 
     // Event listeners
     function init() {
+        // Load stored rates from localStorage first
+        loadStoredRates();
+        
         // Select DOM elements
         currencyInput = document.getElementById('currencyInput');
         currencyFrom = document.getElementById('currencyFrom');
@@ -208,6 +294,22 @@
         currencyFrom.addEventListener('change', convert);
         currencyTo.addEventListener('change', convert);
         swapBtn.addEventListener('click', swap);
+        
+        // Listen for online/offline events
+        window.addEventListener('online', () => {
+            console.log('Network online - refreshing rates');
+            convert();
+        });
+        
+        window.addEventListener('offline', () => {
+            console.log('Network offline');
+            isOfflineMode = true;
+            updateStatus('offline', 'Offline - using last known rates');
+            const recentDate = getMostRecentStoredDate();
+            if (lastUpdated && recentDate) {
+                lastUpdated.textContent = `Offline: rates from ${recentDate.toLocaleDateString()} ${recentDate.toLocaleTimeString()}`;
+            }
+        });
 
         // Initial conversion
         convert();
