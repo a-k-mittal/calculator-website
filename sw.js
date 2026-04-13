@@ -3,13 +3,14 @@
  * Enables offline functionality
  */
 
-const CACHE_NAME = 'calculator-v2';
+const CACHE_NAME = 'calculator-v3';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/css/styles.css',
     '/js/calculator.js',
     '/js/length.js',
+    '/js/area.js',
     '/js/currency.js',
     '/js/weight.js',
     '/js/temperature.js',

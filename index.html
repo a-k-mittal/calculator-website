@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Free online multi-function calculator with scientific operations, length converter, weight converter, temperature converter, and real-time currency conversion. Features calculation history, copy results, and works offline as a PWA.">
-    <meta name="keywords" content="calculator, scientific calculator, length converter, weight converter, temperature converter, currency converter, unit converter, online calculator, PWA calculator, celsius fahrenheit kelvin">
+    <meta name="description" content="Free online multi-function calculator with scientific operations, length converter, area converter, weight converter, temperature converter, and real-time currency conversion. Features calculation history, copy results, and works offline as a PWA.">
+    <meta name="keywords" content="calculator, scientific calculator, length converter, area converter, weight converter, temperature converter, currency converter, unit converter, online calculator, PWA calculator, celsius fahrenheit kelvin, square meter square feet">
     <meta name="author" content="a-k-mittal">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#2d5a27">
@@ -12,8 +12,8 @@
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://a-k-mittal.github.io/calculator-website/">
-    <meta property="og:title" content="Multi-Function Calculator - Scientific, Length, Weight, Temperature & Currency">
-    <meta property="og:description" content="Free online calculator with scientific operations, length, weight, temperature, and real-time currency conversions. Beautiful neumorphism design, works offline.">
+    <meta property="og:title" content="Multi-Function Calculator - Scientific, Length, Area, Weight, Temperature & Currency">
+    <meta property="og:description" content="Free online calculator with scientific operations, length, area, weight, temperature, and real-time currency conversions. Beautiful neumorphism design, works offline.">
     <meta property="og:image" content="https://a-k-mittal.github.io/calculator-website/icons/icon-512.png">
     
     <!-- Twitter Card -->
@@ -21,7 +21,7 @@
     <meta name="twitter:title" content="Multi-Function Calculator">
     <meta name="twitter:description" content="Scientific calculator with unit and currency conversions. Works offline!">
     
-    <title>Multi-Function Calculator - Scientific, Length, Weight, Temperature & Currency Converter</title>
+    <title>Multi-Function Calculator - Scientific, Length, Area, Weight, Temperature & Currency Converter</title>
     <link rel="canonical" href="https://a-k-mittal.github.io/calculator-website/">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="manifest" href="manifest.json">
@@ -78,6 +78,7 @@
         <nav class="tabs">
             <button class="tab-btn active" data-tab="calculator">Calculator</button>
             <button class="tab-btn" data-tab="length">Length</button>
+            <button class="tab-btn" data-tab="area">Area</button>
             <button class="tab-btn" data-tab="currency">Currency</button>
             <button class="tab-btn" data-tab="weight">Weight</button>
             <button class="tab-btn" data-tab="temperature">Temp</button>
@@ -192,6 +193,52 @@
                     <div class="result-display">
                         <span class="result-value" id="lengthResult">100</span>
                         <span class="result-unit" id="lengthUnit">cm</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Area Converter Tab -->
+            <section id="area" class="tab-panel">
+                <div class="converter">
+                    <h2>Area Converter</h2>
+                    <div class="converter-grid">
+                        <div class="input-group">
+                            <label for="areaInput">Value</label>
+                            <input type="number" id="areaInput" placeholder="Enter value" value="1" inputmode="decimal" step="any" min="0" max="999999999999">
+                        </div>
+                        <div class="select-group">
+                            <label for="areaFrom">From</label>
+                            <select id="areaFrom">
+                                <option value="squareMeter" selected>Square Meter (m²)</option>
+                                <option value="squareCentimeter">Square Centimeter (cm²)</option>
+                                <option value="squareKilometer">Square Kilometer (km²)</option>
+                                <option value="squareMile">Square Mile (mi²)</option>
+                                <option value="squareFoot">Square Foot (ft²)</option>
+                                <option value="squareYard">Square Yard (yd²)</option>
+                                <option value="squareInch">Square Inch (in²)</option>
+                                <option value="hectare">Hectare (ha)</option>
+                                <option value="acre">Acre (ac)</option>
+                            </select>
+                        </div>
+                        <button class="swap-btn" id="swapArea" aria-label="Swap units">⇄</button>
+                        <div class="select-group">
+                            <label for="areaTo">To</label>
+                            <select id="areaTo">
+                                <option value="squareMeter">Square Meter (m²)</option>
+                                <option value="squareCentimeter">Square Centimeter (cm²)</option>
+                                <option value="squareKilometer">Square Kilometer (km²)</option>
+                                <option value="squareMile">Square Mile (mi²)</option>
+                                <option value="squareFoot" selected>Square Foot (ft²)</option>
+                                <option value="squareYard">Square Yard (yd²)</option>
+                                <option value="squareInch">Square Inch (in²)</option>
+                                <option value="hectare">Hectare (ha)</option>
+                                <option value="acre">Acre (ac)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="result-display">
+                        <span class="result-value" id="areaResult">10.7639</span>
+                        <span class="result-unit" id="areaUnit">ft²</span>
                     </div>
                 </div>
             </section>
@@ -317,6 +364,7 @@
     <!-- Scripts -->
     <script src="js/calculator.js"></script>
     <script src="js/length.js"></script>
+    <script src="js/area.js"></script>
     <script src="js/currency.js"></script>
     <script src="js/weight.js"></script>
     <script src="js/temperature.js"></script>
@@ -418,7 +466,7 @@
         let touchStartX = 0;
         let touchEndX = 0;
         const tabContent = document.querySelector('.tab-content');
-        const tabs = ['calculator', 'length', 'currency', 'weight', 'temperature'];
+        const tabs = ['calculator', 'length', 'area', 'currency', 'weight', 'temperature'];
 
         function getCurrentTabIndex() {
             const activeTab = document.querySelector('.tab-btn.active');
