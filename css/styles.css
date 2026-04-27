@@ -822,6 +822,356 @@ body[data-theme="dark"] .converter select {
     font-size: 0.875rem;
 }
 
+/* ============================================
+   Finance Calculators
+   ============================================ */
+
+.finance-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.finance-tabs-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.finance-tabs-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-left: 4px;
+}
+
+.finance-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--shadow-light);
+}
+
+.finance-tab-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: calc(var(--radius-md) - 2px);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    position: relative;
+}
+
+.finance-tab-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+}
+
+.finance-tab-btn.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 2px 8px rgba(var(--accent-rgb, 74, 144, 226), 0.3);
+}
+
+.finance-panel {
+    display: none;
+}
+
+.finance-panel.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+.finance-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.finance-inputs .input-group,
+.finance-inputs .select-group {
+    width: 100%;
+}
+
+/* Time input with years and months */
+.time-input-group {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: flex-end;
+}
+
+.time-input-group .input-group {
+    flex: 1;
+}
+
+.finance-results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--neu-shadow-inset);
+    margin-bottom: var(--spacing-lg);
+}
+
+.result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--shadow-dark);
+}
+
+.result-item:last-child {
+    border-bottom: none;
+}
+
+.result-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.result-item .result-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.result-item .result-value.highlight {
+    color: var(--success);
+}
+
+.result-item .result-value.highlight-primary {
+    color: var(--accent);
+    font-size: 1.25rem;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--neu-shadow-inset);
+}
+
+.chart-container canvas {
+    max-height: 100%;
+}
+
+/* Collapsible Sections */
+.collapsible-section {
+    margin-top: var(--spacing-md);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-secondary);
+    box-shadow: var(--neu-shadow-sm);
+}
+
+.collapsible-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    transition: background var(--transition-fast);
+    user-select: none;
+}
+
+.collapsible-header:hover {
+    background: var(--bg-secondary);
+}
+
+.collapsible-header span:first-child {
+    font-size: 0.95rem;
+}
+
+.collapse-icon {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    transition: transform var(--transition-fast);
+}
+
+.collapsible-section.collapsed .collapse-icon {
+    transform: rotate(-90deg);
+}
+
+.collapsible-content {
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.collapsible-section.collapsed .collapsible-content {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.collapsible-content .chart-container {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+}
+
+/* Amortization Controls inside collapsible */
+.amortization-controls {
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--spacing-sm) var(--spacing-md);
+    padding-bottom: 0;
+}
+
+.collapsible-content .amortization-table-wrapper {
+    padding: var(--spacing-md);
+    padding-top: var(--spacing-sm);
+}
+
+/* Tenure Section */
+.tenure-section {
+    width: 100%;
+}
+
+.tenure-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Amortization Table */
+.amortization-toggle {
+    display: flex;
+    gap: var(--spacing-xs);
+    background: var(--bg-primary);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--neu-shadow-inset);
+}
+
+.amort-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.amort-btn:hover {
+    color: var(--text-primary);
+}
+
+.amort-btn.active {
+    background: var(--bg-secondary);
+    color: var(--accent);
+    box-shadow: var(--neu-shadow-sm);
+}
+
+.amortization-table-wrapper {
+    max-height: 300px;
+    overflow-y: auto;
+    border-radius: var(--radius-sm);
+}
+
+.amortization-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.amortization-table th,
+.amortization-table td {
+    padding: var(--spacing-sm);
+    text-align: right;
+    border-bottom: 1px solid var(--shadow-dark);
+}
+
+.amortization-table th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: right;
+}
+
+.amortization-table th:first-child,
+.amortization-table td:first-child {
+    text-align: left;
+}
+
+.amortization-table tbody tr:hover {
+    background: var(--bg-primary);
+}
+
+.amortization-table td {
+    color: var(--text-secondary);
+}
+
+.amortization-table td:nth-child(2) {
+    color: var(--text-primary);
+}
+
+.amortization-table td:nth-child(3) {
+    color: var(--accent);
+}
+
+/* Finance section responsive */
+@media (max-width: 400px) {
+    .finance-tabs-label {
+        font-size: 0.65rem;
+    }
+    
+    .finance-tab-btn {
+        font-size: 0.7rem;
+        padding: 6px 8px;
+    }
+    
+    .chart-container {
+        height: 250px;
+    }
+    
+    .result-item .result-value.highlight-primary {
+        font-size: 1.1rem;
+    }
+    
+    .collapsible-header {
+        padding: var(--spacing-sm);
+        font-size: 0.85rem;
+    }
+    
+    .amortization-table {
+        font-size: 0.75rem;
+    }
+    
+    .amortization-table th,
+    .amortization-table td {
+        padding: var(--spacing-xs);
+    }
+}
+
 /* Responsive Design */
 @media (max-width: 600px) {
     .tabs {

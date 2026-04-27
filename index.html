@@ -27,6 +27,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-96.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -77,6 +78,7 @@
         <!-- Tab Navigation -->
         <nav class="tabs">
             <button class="tab-btn active" data-tab="calculator">Calculator</button>
+            <button class="tab-btn" data-tab="finance">Finance</button>
             <button class="tab-btn" data-tab="length">Length</button>
             <button class="tab-btn" data-tab="area">Area</button>
             <button class="tab-btn" data-tab="currency">Currency</button>
@@ -148,6 +150,277 @@
                         </div>
                         <div class="history-list" id="historyList">
                             <p class="history-empty">No calculations yet</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Finance Calculators Tab -->
+            <section id="finance" class="tab-panel">
+                <div class="finance-container">
+                    <!-- Finance Sub-tabs -->
+                    <div class="finance-tabs-wrapper">
+                        <span class="finance-tabs-label">Calculator Type</span>
+                        <div class="finance-tabs">
+                            <button class="finance-tab-btn active" data-calc="compound">Compound</button>
+                            <button class="finance-tab-btn" data-calc="sip">SIP</button>
+                            <button class="finance-tab-btn" data-calc="lumpsum">Lump Sum</button>
+                            <button class="finance-tab-btn" data-calc="emi">EMI</button>
+                        </div>
+                    </div>
+
+                    <!-- Compound Interest Calculator -->
+                    <div id="compound" class="finance-panel active">
+                        <div class="converter">
+                            <h2>Compound Interest Calculator</h2>
+                            <div class="finance-inputs">
+                                <div class="input-group">
+                                    <label for="ciPrincipal">Principal Amount (₹)</label>
+                                    <input type="number" id="ciPrincipal" placeholder="Enter principal" value="100000" inputmode="numeric" step="1000" min="0">
+                                </div>
+                                <div class="input-group">
+                                    <label for="ciRate">Annual Interest Rate (%)</label>
+                                    <input type="number" id="ciRate" placeholder="Enter rate" value="12" inputmode="decimal" step="0.1" min="0" max="100">
+                                </div>
+                                <div class="time-input-group">
+                                    <div class="input-group">
+                                        <label for="ciYears">Years</label>
+                                        <input type="number" id="ciYears" placeholder="0" value="5" inputmode="numeric" step="1" min="0" max="50">
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="ciMonths">Months</label>
+                                        <input type="number" id="ciMonths" placeholder="0" value="0" inputmode="numeric" step="1" min="0" max="600">
+                                    </div>
+                                </div>
+                                <div class="select-group">
+                                    <label for="ciFrequency">Compounding Frequency</label>
+                                    <select id="ciFrequency">
+                                        <option value="1">Annually</option>
+                                        <option value="2">Semi-Annually</option>
+                                        <option value="4">Quarterly</option>
+                                        <option value="12" selected>Monthly</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="finance-results">
+                                <div class="result-item">
+                                    <span class="result-label">Principal Amount</span>
+                                    <span class="result-value" id="ciPrincipalResult">₹1,00,000</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Total Interest</span>
+                                    <span class="result-value highlight" id="ciInterestResult">₹0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Maturity Amount</span>
+                                    <span class="result-value highlight-primary" id="ciMaturityResult">₹0</span>
+                                </div>
+                            </div>
+                            <div class="collapsible-section">
+                                <div class="collapsible-header" data-target="ciChartSection">
+                                    <span>Growth Chart</span>
+                                    <span class="collapse-icon">▼</span>
+                                </div>
+                                <div class="collapsible-content" id="ciChartSection">
+                                    <div class="chart-container">
+                                        <canvas id="ciChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SIP Calculator -->
+                    <div id="sip" class="finance-panel">
+                        <div class="converter">
+                            <h2>SIP Calculator</h2>
+                            <div class="finance-inputs">
+                                <div class="input-group">
+                                    <label for="sipMonthly">Monthly Investment (₹)</label>
+                                    <input type="number" id="sipMonthly" placeholder="Enter monthly amount" value="10000" inputmode="numeric" step="500" min="0">
+                                </div>
+                                <div class="input-group">
+                                    <label for="sipRate">Expected Return Rate (%)</label>
+                                    <input type="number" id="sipRate" placeholder="Enter expected rate" value="12" inputmode="decimal" step="0.1" min="0" max="50">
+                                </div>
+                                <div class="time-input-group">
+                                    <div class="input-group">
+                                        <label for="sipYears">Years</label>
+                                        <input type="number" id="sipYears" placeholder="0" value="10" inputmode="numeric" step="1" min="0" max="40">
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="sipMonths">Months</label>
+                                        <input type="number" id="sipMonths" placeholder="0" value="0" inputmode="numeric" step="1" min="0" max="480">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="finance-results">
+                                <div class="result-item">
+                                    <span class="result-label">Total Invested</span>
+                                    <span class="result-value" id="sipInvestedResult">₹0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Estimated Returns</span>
+                                    <span class="result-value highlight" id="sipReturnsResult">₹0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Total Value</span>
+                                    <span class="result-value highlight-primary" id="sipTotalResult">₹0</span>
+                                </div>
+                            </div>
+                            <div class="collapsible-section">
+                                <div class="collapsible-header" data-target="sipChartSection">
+                                    <span>Investment Growth</span>
+                                    <span class="collapse-icon">▼</span>
+                                </div>
+                                <div class="collapsible-content" id="sipChartSection">
+                                    <div class="chart-container">
+                                        <canvas id="sipChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lump Sum Calculator -->
+                    <div id="lumpsum" class="finance-panel">
+                        <div class="converter">
+                            <h2>Lump Sum Calculator</h2>
+                            <div class="finance-inputs">
+                                <div class="input-group">
+                                    <label for="lsAmount">Investment Amount (₹)</label>
+                                    <input type="number" id="lsAmount" placeholder="Enter amount" value="500000" inputmode="numeric" step="10000" min="0">
+                                </div>
+                                <div class="input-group">
+                                    <label for="lsRate">Expected Return Rate (%)</label>
+                                    <input type="number" id="lsRate" placeholder="Enter expected rate" value="12" inputmode="decimal" step="0.1" min="0" max="50">
+                                </div>
+                                <div class="time-input-group">
+                                    <div class="input-group">
+                                        <label for="lsYears">Years</label>
+                                        <input type="number" id="lsYears" placeholder="0" value="10" inputmode="numeric" step="1" min="0" max="40">
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="lsMonths">Months</label>
+                                        <input type="number" id="lsMonths" placeholder="0" value="0" inputmode="numeric" step="1" min="0" max="480">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="finance-results">
+                                <div class="result-item">
+                                    <span class="result-label">Invested Amount</span>
+                                    <span class="result-value" id="lsInvestedResult">₹0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Estimated Returns</span>
+                                    <span class="result-value highlight" id="lsReturnsResult">₹0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Total Value</span>
+                                    <span class="result-value highlight-primary" id="lsTotalResult">₹0</span>
+                                </div>
+                            </div>
+                            <div class="collapsible-section">
+                                <div class="collapsible-header" data-target="lsChartSection">
+                                    <span>Growth Chart</span>
+                                    <span class="collapse-icon">▼</span>
+                                </div>
+                                <div class="collapsible-content" id="lsChartSection">
+                                    <div class="chart-container">
+                                        <canvas id="lsChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EMI Calculator -->
+                    <div id="emi" class="finance-panel">
+                        <div class="converter">
+                            <h2>EMI Calculator</h2>
+                            <div class="finance-inputs">
+                                <div class="input-group">
+                                    <label for="emiLoan">Loan Amount (₹)</label>
+                                    <input type="number" id="emiLoan" placeholder="Enter loan amount" value="1000000" inputmode="numeric" step="10000" min="0">
+                                </div>
+                                <div class="input-group">
+                                    <label for="emiRate">Interest Rate (% per annum)</label>
+                                    <input type="number" id="emiRate" placeholder="Enter rate" value="8.5" inputmode="decimal" step="0.1" min="0" max="30">
+                                </div>
+                                <div class="tenure-section">
+                                    <label class="tenure-label">Loan Tenure</label>
+                                    <div class="time-input-group">
+                                        <div class="input-group">
+                                            <label for="emiYears">Years</label>
+                                            <input type="number" id="emiYears" placeholder="0" value="5" inputmode="numeric" step="1" min="0" max="30">
+                                        </div>
+                                        <div class="input-group">
+                                            <label for="emiMonths">Months</label>
+                                            <input type="number" id="emiMonths" placeholder="0" value="0" inputmode="numeric" step="1" min="0" max="360">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="finance-results">
+                                <div class="result-item">
+                                    <span class="result-label">Monthly EMI</span>
+                                    <span class="result-value highlight-primary" id="emiMonthlyResult">₹0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Principal Amount</span>
+                                    <span class="result-value" id="emiPrincipalResult">₹0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Total Interest</span>
+                                    <span class="result-value highlight" id="emiInterestResult">₹0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Total Amount</span>
+                                    <span class="result-value" id="emiTotalResult">₹0</span>
+                                </div>
+                            </div>
+                            <div class="collapsible-section">
+                                <div class="collapsible-header" data-target="emiChartSection">
+                                    <span>Payment Breakdown</span>
+                                    <span class="collapse-icon">▼</span>
+                                </div>
+                                <div class="collapsible-content" id="emiChartSection">
+                                    <div class="chart-container">
+                                        <canvas id="emiChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Amortization Schedule -->
+                            <div class="collapsible-section collapsed">
+                                <div class="collapsible-header" data-target="amortizationSection">
+                                    <span>Amortization Schedule</span>
+                                    <span class="collapse-icon">▼</span>
+                                </div>
+                                <div class="collapsible-content" id="amortizationSection">
+                                    <div class="amortization-controls">
+                                        <div class="amortization-toggle">
+                                            <button class="amort-btn active" data-view="yearly">Yearly</button>
+                                            <button class="amort-btn" data-view="monthly">Monthly</button>
+                                        </div>
+                                    </div>
+                                    <div class="amortization-table-wrapper">
+                                    <table class="amortization-table" id="amortizationTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Period</th>
+                                                <th>Principal</th>
+                                                <th>Interest</th>
+                                                <th>Balance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="amortizationBody">
+                                            <!-- Populated by JS -->
+                                        </tbody>
+                                    </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -368,6 +641,7 @@
     <script src="js/currency.js"></script>
     <script src="js/weight.js"></script>
     <script src="js/temperature.js"></script>
+    <script src="js/investment.js"></script>
     <script>
         // Tab Navigation
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -466,7 +740,7 @@
         let touchStartX = 0;
         let touchEndX = 0;
         const tabContent = document.querySelector('.tab-content');
-        const tabs = ['calculator', 'length', 'area', 'currency', 'weight', 'temperature'];
+        const tabs = ['calculator', 'finance', 'length', 'area', 'currency', 'weight', 'temperature'];
 
         function getCurrentTabIndex() {
             const activeTab = document.querySelector('.tab-btn.active');
