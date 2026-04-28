@@ -26,6 +26,15 @@ A fully responsive, offline-capable calculator website with a beautiful neumorph
 ### ⚖️ Weight Converter
 - Kilogram, Gram, Milligram
 
+### 💰 Finance Calculators
+- **Compound Interest**: Calculate growth with customizable compounding frequency
+- **SIP Calculator**: Systematic Investment Plan returns with growth visualization
+- **Lump Sum Calculator**: One-time investment projections
+- **EMI Calculator**: Loan EMI with amortization schedule (yearly/monthly breakdown)
+- Indian currency formatting (₹1,00,000)
+- Interactive Chart.js visualizations
+- Collapsible chart and amortization sections
+
 ## Design Features
 - **Neumorphism UI** - Soft 3D raised/pressed elements
 - **Nature-inspired colors** - Forest green and earth tones
@@ -168,6 +177,7 @@ All required PNG icons are included in the `icons/` folder:
 - HTML5
 - CSS3 (Custom Properties, Flexbox, Grid)
 - Vanilla JavaScript (ES6+)
+- Chart.js 4.4.1 for financial visualizations
 - Service Worker for offline support
 - ExchangeRate-API for currency data
 
