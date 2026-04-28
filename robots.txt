@@ -1,8 +1,8 @@
 # Robots.txt for Multi-Function Calculator
-# https://a-k-mittal.github.io/calculator-website/
+# https://a-k-mittal.github.io/calculator/
 
 User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://a-k-mittal.github.io/calculator-website/sitemap.xml
+Sitemap: https://a-k-mittal.github.io/calculator/sitemap.xml
