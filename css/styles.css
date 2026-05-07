@@ -957,6 +957,17 @@ body[data-theme="dark"] .converter select {
     font-size: 1.25rem;
 }
 
+/* SWP Status Styles */
+.result-item .result-value.swp-sustained {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.result-item .result-value.swp-depleted {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
 .chart-container {
     position: relative;
     width: 100%;

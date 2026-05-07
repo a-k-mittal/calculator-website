@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Chart instances
     let ciChart = null;
     let sipChart = null;
+    let swpChart = null;
     let lsChart = null;
     let emiChart = null;
 
@@ -186,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateAllCharts() {
         calculateCompoundInterest();
         calculateSIP();
+        calculateSWP();
         calculateLumpSum();
         calculateEMI();
     }
@@ -239,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 switch(btn.dataset.calc) {
                     case 'compound': calculateCompoundInterest(); break;
                     case 'sip': calculateSIP(); break;
+                    case 'swp': calculateSWP(); break;
                     case 'lumpsum': calculateLumpSum(); break;
                     case 'emi': calculateEMI(); generateAmortizationSchedule(); break;
                 }
@@ -610,6 +613,246 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listeners for SIP
     [sipMonthly, sipRate, sipYears, sipMonths].forEach(el => {
         if (el) el.addEventListener('input', calculateSIP);
+    });
+
+    // ==========================================
+    // SWP Calculator
+    // ==========================================
+    const swpAmount = document.getElementById('swpAmount');
+    const swpWithdrawal = document.getElementById('swpWithdrawal');
+    const swpRate = document.getElementById('swpRate');
+    const swpYears = document.getElementById('swpYears');
+    const swpMonths = document.getElementById('swpMonths');
+
+    // Enforce input validations
+    enforcePositiveInput(swpAmount);
+    enforcePositiveInput(swpWithdrawal);
+    enforcePositiveInput(swpRate);
+    enforceIntegerInput(swpYears);
+    enforceIntegerInput(swpMonths);
+
+    function calculateSWP() {
+        // Sanitize inputs
+        const initialAmount = sanitizePositiveNumber(swpAmount.value, 0);
+        const monthlyWithdrawal = sanitizePositiveNumber(swpWithdrawal.value, 0);
+        const annualRate = sanitizePositiveNumber(swpRate.value, 0);
+        const r = annualRate / 100 / 12; // Monthly rate
+        const years = sanitizePositiveInteger(swpYears.value, 0);
+        const months = sanitizePositiveInteger(swpMonths.value, 0);
+        
+        // Total months
+        const n = (years * 12) + months;
+
+        // Handle edge case: zero investment or zero time period
+        if (initialAmount === 0 || n === 0) {
+            document.getElementById('swpTotalWithdrawnResult').textContent = formatIndianCurrency(0);
+            document.getElementById('swpFinalBalanceResult').textContent = formatIndianCurrency(initialAmount);
+            document.getElementById('swpReturnsResult').textContent = formatIndianCurrency(0);
+            document.getElementById('swpStatusResult').textContent = initialAmount > 0 ? 'No withdrawals' : 'No investment';
+            document.getElementById('swpStatusResult').className = 'result-value';
+            
+            updateSWPChart(['0M'], [initialAmount], [0]);
+            return;
+        }
+
+        // Calculate month by month
+        let balance = initialAmount;
+        let totalWithdrawn = 0;
+        let totalReturns = 0;
+        let corpusDepleted = false;
+        let depletedAtMonth = -1;
+        
+        const balanceData = [initialAmount];
+        const withdrawalData = [0];
+        const labels = ['0M'];
+        
+        for (let month = 1; month <= n; month++) {
+            if (balance <= 0) {
+                // Corpus already depleted
+                balanceData.push(0);
+                withdrawalData.push(totalWithdrawn);
+                if (depletedAtMonth === -1) depletedAtMonth = month - 1;
+                corpusDepleted = true;
+            } else {
+                // Add monthly returns
+                const monthlyReturn = balance * r;
+                balance += monthlyReturn;
+                totalReturns += monthlyReturn;
+                
+                // Deduct withdrawal
+                const actualWithdrawal = Math.min(monthlyWithdrawal, balance);
+                balance -= actualWithdrawal;
+                totalWithdrawn += actualWithdrawal;
+                
+                // Handle overflow
+                if (!isValidResult(balance)) {
+                    balance = Math.max(0, initialAmount - totalWithdrawn);
+                }
+                
+                balanceData.push(Math.max(0, balance));
+                withdrawalData.push(totalWithdrawn);
+                
+                if (balance <= 0 && depletedAtMonth === -1) {
+                    depletedAtMonth = month;
+                    corpusDepleted = true;
+                }
+            }
+            
+            // Add labels at appropriate intervals
+            if (n <= 12) {
+                labels.push(`${month}M`);
+            } else if (n <= 60) {
+                // Every 3 months for up to 5 years
+                if (month % 3 === 0 || month === n) {
+                    labels.push(month % 12 === 0 ? `${month/12}Y` : `${month}M`);
+                }
+            } else {
+                // Every year for longer periods
+                if (month % 12 === 0 || month === n) {
+                    labels.push(`${Math.floor(month/12)}Y${month % 12 > 0 ? ` ${month % 12}M` : ''}`);
+                }
+            }
+        }
+
+        // Ensure balanceData and labels match
+        const chartLabels = [];
+        const chartBalance = [];
+        const chartWithdrawals = [];
+        
+        if (n <= 12) {
+            // Monthly display
+            for (let i = 0; i <= n; i++) {
+                chartLabels.push(`${i}M`);
+                chartBalance.push(balanceData[i] || 0);
+                chartWithdrawals.push(withdrawalData[i] || 0);
+            }
+        } else if (n <= 60) {
+            // Every 3 months
+            for (let i = 0; i <= n; i += 3) {
+                const label = i === 0 ? '0M' : (i % 12 === 0 ? `${i/12}Y` : `${i}M`);
+                chartLabels.push(label);
+                chartBalance.push(balanceData[i] || 0);
+                chartWithdrawals.push(withdrawalData[i] || 0);
+            }
+            // Include final point if not already included
+            if (n % 3 !== 0) {
+                chartLabels.push(`${years}Y${months > 0 ? ` ${months}M` : ''}`);
+                chartBalance.push(balanceData[n] || 0);
+                chartWithdrawals.push(withdrawalData[n] || 0);
+            }
+        } else {
+            // Yearly
+            for (let i = 0; i <= n; i += 12) {
+                chartLabels.push(i === 0 ? '0Y' : `${i/12}Y`);
+                chartBalance.push(balanceData[i] || 0);
+                chartWithdrawals.push(withdrawalData[i] || 0);
+            }
+            // Include final point if not exactly at year boundary
+            if (n % 12 !== 0) {
+                chartLabels.push(`${years}Y ${months}M`);
+                chartBalance.push(balanceData[n] || 0);
+                chartWithdrawals.push(withdrawalData[n] || 0);
+            }
+        }
+
+        // Update results
+        document.getElementById('swpTotalWithdrawnResult').textContent = formatIndianCurrency(totalWithdrawn);
+        document.getElementById('swpFinalBalanceResult').textContent = formatIndianCurrency(Math.max(0, balance));
+        document.getElementById('swpReturnsResult').textContent = formatIndianCurrency(totalReturns);
+        
+        // Status message
+        const statusEl = document.getElementById('swpStatusResult');
+        if (corpusDepleted) {
+            const depletedYears = Math.floor(depletedAtMonth / 12);
+            const depletedMonths = depletedAtMonth % 12;
+            let depletedText = '';
+            if (depletedYears > 0 && depletedMonths > 0) {
+                depletedText = `Depleted at ${depletedYears}Y ${depletedMonths}M`;
+            } else if (depletedYears > 0) {
+                depletedText = `Depleted at ${depletedYears}Y`;
+            } else {
+                depletedText = `Depleted at ${depletedMonths}M`;
+            }
+            statusEl.textContent = depletedText;
+            statusEl.className = 'result-value swp-depleted';
+        } else {
+            statusEl.textContent = 'Corpus Sustained';
+            statusEl.className = 'result-value swp-sustained';
+        }
+
+        // Update chart
+        updateSWPChart(chartLabels, chartBalance, chartWithdrawals);
+    }
+
+    // Helper function to update SWP chart
+    function updateSWPChart(labels, balanceData, withdrawalData) {
+        const ctx = document.getElementById('swpChart');
+        if (!ctx) return;
+
+        const colors = getChartColors();
+
+        if (swpChart) {
+            swpChart.destroy();
+        }
+
+        swpChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Remaining Balance',
+                        data: balanceData,
+                        borderColor: colors.primary,
+                        backgroundColor: colors.primary + '33',
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Total Withdrawn',
+                        data: withdrawalData,
+                        borderColor: colors.secondary,
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5],
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: colors.text }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.dataset.label}: ${formatIndianCurrency(context.raw)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: colors.grid },
+                        ticks: { color: colors.text }
+                    },
+                    y: {
+                        grid: { color: colors.grid },
+                        ticks: {
+                            color: colors.text,
+                            callback: (value) => formatIndianCurrency(value)
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Event listeners for SWP
+    [swpAmount, swpWithdrawal, swpRate, swpYears, swpMonths].forEach(el => {
+        if (el) el.addEventListener('input', calculateSWP);
     });
 
     // ==========================================

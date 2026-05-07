@@ -164,6 +164,7 @@
                         <div class="finance-tabs">
                             <button class="finance-tab-btn active" data-calc="compound">Compound</button>
                             <button class="finance-tab-btn" data-calc="sip">SIP</button>
+                            <button class="finance-tab-btn" data-calc="swp">SWP</button>
                             <button class="finance-tab-btn" data-calc="lumpsum">Lump Sum</button>
                             <button class="finance-tab-btn" data-calc="emi">EMI</button>
                         </div>
@@ -276,6 +277,66 @@
                                 <div class="collapsible-content" id="sipChartSection">
                                     <div class="chart-container">
                                         <canvas id="sipChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SWP Calculator -->
+                    <div id="swp" class="finance-panel">
+                        <div class="converter">
+                            <h2>SWP Calculator</h2>
+                            <div class="finance-inputs">
+                                <div class="input-group">
+                                    <label for="swpAmount">Total Investment (₹)</label>
+                                    <input type="number" id="swpAmount" placeholder="Enter investment amount" value="1000000" inputmode="numeric" step="10000" min="0">
+                                </div>
+                                <div class="input-group">
+                                    <label for="swpWithdrawal">Monthly Withdrawal (₹)</label>
+                                    <input type="number" id="swpWithdrawal" placeholder="Enter withdrawal amount" value="10000" inputmode="numeric" step="1000" min="0">
+                                </div>
+                                <div class="input-group">
+                                    <label for="swpRate">Expected Return Rate (%)</label>
+                                    <input type="number" id="swpRate" placeholder="Enter expected rate" value="8" inputmode="decimal" step="0.1" min="0" max="50">
+                                </div>
+                                <div class="time-input-group">
+                                    <div class="input-group">
+                                        <label for="swpYears">Years</label>
+                                        <input type="number" id="swpYears" placeholder="0" value="10" inputmode="numeric" step="1" min="0" max="50">
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="swpMonths">Months</label>
+                                        <input type="number" id="swpMonths" placeholder="0" value="0" inputmode="numeric" step="1" min="0" max="600">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="finance-results">
+                                <div class="result-item">
+                                    <span class="result-label">Total Withdrawals</span>
+                                    <span class="result-value" id="swpTotalWithdrawnResult">₹0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Final Balance</span>
+                                    <span class="result-value highlight-primary" id="swpFinalBalanceResult">₹0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Total Returns Earned</span>
+                                    <span class="result-value highlight" id="swpReturnsResult">₹0</span>
+                                </div>
+                                <div class="result-item swp-status-item">
+                                    <span class="result-label">Corpus Status</span>
+                                    <span class="result-value" id="swpStatusResult">-</span>
+                                </div>
+                            </div>
+                            <div class="collapsible-section">
+                                <div class="collapsible-header" data-target="swpChartSection">
+                                    <span>Withdrawal Progress</span>
+                                    <span class="collapse-icon">▼</span>
+                                </div>
+                                <div class="collapsible-content" id="swpChartSection">
+                                    <div class="chart-container">
+                                        <canvas id="swpChart"></canvas>
                                     </div>
                                 </div>
                             </div>
