@@ -713,7 +713,7 @@
                                 Annual Income (₹)
                                 <span class="tooltip-icon" data-tooltip="Your total annual income from salary, business, or other sources before any deductions.">ⓘ</span>
                             </label>
-                            <input type="number" id="taxIncome" placeholder="Enter annual income" value="1000000" inputmode="numeric" step="10000" min="0">
+                            <input type="number" id="taxIncome" placeholder="Enter annual income" value="1000000" inputmode="numeric" step="any" min="0">
                         </div>
                         
                         <div class="input-group">
@@ -736,6 +736,21 @@
                             <span class="collapse-icon">▼</span>
                         </div>
                         <div class="collapsible-content" id="oldRegimeDeductions">
+                            <!-- Quick Actions -->
+                            <div class="quick-actions">
+                                <button type="button" class="quick-action-btn" id="maxOut80C" title="Set 80C to maximum ₹1,50,000">
+                                    Max 80C
+                                </button>
+                                <button type="button" class="quick-action-btn" id="maxOut80D" title="Set 80D to ₹25,000">
+                                    Max 80D
+                                </button>
+                                <button type="button" class="quick-action-btn" id="maxOutNPS" title="Set NPS to maximum ₹50,000">
+                                    Max NPS
+                                </button>
+                                <button type="button" class="quick-action-btn" id="clearAllDeductions" title="Reset all deductions to 0">
+                                    Clear All
+                                </button>
+                            </div>
                             <div class="deductions-grid">
                                 <div class="input-group">
                                     <label for="deduction80C">
@@ -794,6 +809,35 @@
                                 </div>
                             </div>
                             <p class="deduction-note">Note: Standard deduction of ₹50,000 (Old) / ₹75,000 (New) is applied automatically.</p>
+                            <p class="deduction-warning" id="deductionWarning" style="display: none;"></p>
+                        </div>
+                    </div>
+
+                    <!-- Common Deductions (Both Regimes) -->
+                    <div class="collapsible-section collapsed">
+                        <div class="collapsible-header" data-target="newRegimeDeductions">
+                            <span>Additional Deductions (Both Regimes)</span>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content" id="newRegimeDeductions">
+                            <div class="deductions-grid">
+                                <div class="input-group">
+                                    <label for="deductionNPSEmployer">
+                                        Employer's NPS - 80CCD(2)
+                                        <span class="tooltip-icon" data-tooltip="Employer's contribution to NPS. Up to 14% of basic salary (10% for private sector). Available in BOTH regimes.">ⓘ</span>
+                                    </label>
+                                    <input type="number" id="deductionNPSEmployer" placeholder="Enter amount" value="0" inputmode="numeric" step="1" min="0">
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label for="deductionAgnipath">
+                                        Agniveer Corpus - 80CCH
+                                        <span class="tooltip-icon" data-tooltip="Contribution to Agniveer Corpus Fund. 100% deductible. Only for Agniveers.">ⓘ</span>
+                                    </label>
+                                    <input type="number" id="deductionAgnipath" placeholder="Enter amount" value="0" inputmode="numeric" step="1" min="0">
+                                </div>
+                            </div>
+                            <p class="deduction-note">These deductions are allowed in BOTH Old and New Tax Regimes.</p>
                         </div>
                     </div>
 
@@ -805,6 +849,14 @@
                                 <span>Gross Income</span>
                                 <span id="oldGrossIncome">₹0</span>
                             </div>
+                            <div class="tax-result-row sub-item">
+                                <span>Standard Deduction</span>
+                                <span id="oldStandardDeduction">₹50,000</span>
+                            </div>
+                            <div class="tax-result-row sub-item">
+                                <span>Chapter VI-A Deductions</span>
+                                <span id="oldChapterVIA">₹0</span>
+                            </div>
                             <div class="tax-result-row">
                                 <span>Total Deductions</span>
                                 <span id="oldDeductions">₹0</span>
@@ -813,8 +865,20 @@
                                 <span>Taxable Income</span>
                                 <span id="oldTaxableIncome">₹0</span>
                             </div>
+                            <div class="tax-result-row sub-item clickable" id="oldTaxOnIncomeRow" title="Click to see slab breakdown">
+                                <span>Tax on Income ▾</span>
+                                <span id="oldTaxOnIncome">₹0</span>
+                            </div>
+                            <div class="tax-result-row sub-item" id="oldRebateRow" style="display: none;">
+                                <span>Less: Rebate u/s 87A</span>
+                                <span id="oldRebate">₹0</span>
+                            </div>
+                            <div class="tax-result-row sub-item">
+                                <span>Health & Edu Cess (4%)</span>
+                                <span id="oldCess">₹0</span>
+                            </div>
                             <div class="tax-result-row highlight">
-                                <span>Tax Payable</span>
+                                <span>Total Tax Payable</span>
                                 <span id="oldTaxPayable">₹0</span>
                             </div>
                             <div class="tax-result-row">
@@ -837,8 +901,20 @@
                                 <span>Taxable Income</span>
                                 <span id="newTaxableIncome">₹0</span>
                             </div>
+                            <div class="tax-result-row sub-item clickable" id="newTaxOnIncomeRow" title="Click to see slab breakdown">
+                                <span>Tax on Income ▾</span>
+                                <span id="newTaxOnIncome">₹0</span>
+                            </div>
+                            <div class="tax-result-row sub-item" id="newRebateRow" style="display: none;">
+                                <span>Less: Rebate u/s 87A</span>
+                                <span id="newRebate">₹0</span>
+                            </div>
+                            <div class="tax-result-row sub-item">
+                                <span>Health & Edu Cess (4%)</span>
+                                <span id="newCess">₹0</span>
+                            </div>
                             <div class="tax-result-row highlight">
-                                <span>Tax Payable</span>
+                                <span>Total Tax Payable</span>
                                 <span id="newTaxPayable">₹0</span>
                             </div>
                             <div class="tax-result-row">
@@ -854,6 +930,60 @@
                         <div class="recommendation-text">
                             <strong id="recommendedRegime">New Tax Regime</strong>
                             <span id="taxSavings">saves you ₹0</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="tax-action-buttons">
+                        <button type="button" class="tax-action-btn" id="exportPDF" title="Export comparison as PDF">
+                            📄 Export PDF
+                        </button>
+                        <button type="button" class="tax-action-btn" id="saveScenario" title="Save this calculation">
+                            💾 Save Scenario
+                        </button>
+                        <button type="button" class="tax-action-btn" id="viewSavedScenarios" title="View saved scenarios">
+                            📋 Compare Saved
+                        </button>
+                    </div>
+
+                    <!-- Investment Suggestions -->
+                    <div class="investment-suggestions" id="investmentSuggestions">
+                        <h4>💰 Investment Suggestions</h4>
+                        <div class="suggestions-list" id="suggestionsList">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+
+                    <!-- Slab-wise Tax Breakdown -->
+                    <div class="collapsible-section collapsed">
+                        <div class="collapsible-header" data-target="slabBreakdown">
+                            <span>Slab-wise Tax Breakdown</span>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content" id="slabBreakdown">
+                            <div class="slab-breakdown-container">
+                                <div class="slab-breakdown-card">
+                                    <h4>Old Regime</h4>
+                                    <div id="oldSlabBreakdown"></div>
+                                </div>
+                                <div class="slab-breakdown-card">
+                                    <h4>New Regime</h4>
+                                    <div id="newSlabBreakdown"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Saved Scenarios Modal -->
+                    <div class="modal-overlay" id="scenariosModal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3>Saved Scenarios</h3>
+                                <button type="button" class="modal-close" id="closeModal">&times;</button>
+                            </div>
+                            <div class="modal-body" id="savedScenariosList">
+                                <p class="no-scenarios">No saved scenarios yet</p>
+                            </div>
                         </div>
                     </div>
 

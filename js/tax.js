@@ -4,11 +4,14 @@
  * Supports multiple Financial Years (FY 2024-25, 2025-26, 2026-27)
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+(function() {
+    function init() {
     // Input elements
     const taxFY = document.getElementById('taxFY');
     const taxIncome = document.getElementById('taxIncome');
     const taxAge = document.getElementById('taxAge');
+    
+    // Old Regime specific deductions
     const deduction80C = document.getElementById('deduction80C');
     const deduction80CCD = document.getElementById('deduction80CCD');
     const deduction80D = document.getElementById('deduction80D');
@@ -16,6 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const deductionHRA = document.getElementById('deductionHRA');
     const deductionHomeLoan = document.getElementById('deductionHomeLoan');
     const deductionOther = document.getElementById('deductionOther');
+    
+    // Common deductions (applicable to both regimes)
+    const deductionNPSEmployer = document.getElementById('deductionNPSEmployer');
+    const deductionAgnipath = document.getElementById('deductionAgnipath');
 
     // Constants
     const CESS_RATE = 0.04; // 4% Health & Education Cess
@@ -230,20 +237,33 @@ document.addEventListener('DOMContentLoaded', () => {
         return num;
     }
 
-    // Calculate tax based on slabs
+    // Calculate tax based on slabs with detailed breakdown
     function calculateTaxOnSlabs(income, slabs) {
         let tax = 0;
         let previousLimit = 0;
+        const breakdown = [];
 
         for (const slab of slabs) {
             if (income <= previousLimit) break;
             
             const taxableInSlab = Math.min(income, slab.limit) - previousLimit;
-            tax += taxableInSlab * slab.rate;
+            const taxInSlab = taxableInSlab * slab.rate;
+            tax += taxInSlab;
+            
+            if (taxableInSlab > 0) {
+                breakdown.push({
+                    from: previousLimit,
+                    to: Math.min(income, slab.limit),
+                    rate: slab.rate,
+                    taxableAmount: taxableInSlab,
+                    tax: taxInSlab
+                });
+            }
+            
             previousLimit = slab.limit;
         }
 
-        return tax;
+        return { tax, breakdown };
     }
 
     // Calculate surcharge
@@ -266,19 +286,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Calculate Old Regime Tax
-    function calculateOldRegimeTax(income, age, deductions) {
+    function calculateOldRegimeTax(income, age, deductions, commonDeductions = {}) {
         const config = getConfig();
         const grossIncome = income;
         
-        // Total deductions
-        const totalDeductions = config.standardDeductionOld + 
+        // Standard Deduction (Old Regime)
+        const standardDeduction = config.standardDeductionOld;
+        
+        // Common deductions (applicable to both regimes)
+        const commonTotal = (commonDeductions.npsEmployer || 0) + (commonDeductions.agnipath || 0);
+        
+        // Chapter VI-A Deductions (80C, 80CCD, 80D, 80TTA, HRA, Home Loan, Other)
+        const chapterVIADeductions = 
             Math.min(deductions.c80, 150000) +
             Math.min(deductions.ccd80, 50000) +
             Math.min(deductions.d80, 100000) +
             Math.min(deductions.tta80, age === 'supersenior' || age === 'senior' ? 50000 : 10000) +
             deductions.hra +
             Math.min(deductions.homeLoan, 200000) +
-            deductions.other;
+            deductions.other +
+            commonTotal;
+        
+        // Total deductions
+        const totalDeductions = standardDeduction + chapterVIADeductions;
 
         // Taxable income
         const taxableIncome = Math.max(0, grossIncome - totalDeductions);
@@ -286,62 +316,81 @@ document.addEventListener('DOMContentLoaded', () => {
         // Get appropriate slabs based on age
         const slabs = config.oldSlabs[age];
 
-        // Calculate tax
-        let tax = calculateTaxOnSlabs(taxableIncome, slabs);
-
-        // Apply rebate u/s 87A
-        if (taxableIncome <= config.rebateLimitOld) {
-            tax = 0;
+        // Calculate tax on slabs with breakdown
+        const { tax: taxOnIncome, breakdown: slabBreakdown } = calculateTaxOnSlabs(taxableIncome, slabs);
+        
+        // Calculate rebate u/s 87A
+        let rebate = 0;
+        let taxAfterRebate = taxOnIncome;
+        if (taxableIncome <= config.rebateLimitOld && taxOnIncome > 0) {
+            rebate = taxOnIncome;
+            taxAfterRebate = 0;
         }
 
         // Add surcharge
-        const surcharge = calculateSurcharge(grossIncome, tax, false);
-        tax += surcharge;
+        const surcharge = calculateSurcharge(grossIncome, taxAfterRebate, false);
+        const taxWithSurcharge = taxAfterRebate + surcharge;
 
         // Add cess
-        const cess = tax * CESS_RATE;
-        tax += cess;
+        const cess = taxWithSurcharge * CESS_RATE;
+        const totalTax = taxWithSurcharge + cess;
 
         return {
             grossIncome,
+            standardDeduction,
+            chapterVIADeductions,
             totalDeductions,
             taxableIncome,
-            tax: Math.round(tax),
-            effectiveRate: grossIncome > 0 ? ((tax / grossIncome) * 100).toFixed(2) : 0
+            taxOnIncome: Math.round(taxOnIncome),
+            slabBreakdown,
+            rebate: Math.round(rebate),
+            cess: Math.round(cess),
+            tax: Math.round(totalTax),
+            effectiveRate: grossIncome > 0 ? ((totalTax / grossIncome) * 100).toFixed(2) : 0
         };
     }
 
     // Calculate New Regime Tax
-    function calculateNewRegimeTax(income) {
+    function calculateNewRegimeTax(income, commonDeductions = {}) {
         const config = getConfig();
         const grossIncome = income;
         
-        // Only standard deduction in new regime
-        const totalDeductions = config.standardDeductionNew;
+        // Common deductions (applicable to both regimes)
+        const commonTotal = (commonDeductions.npsEmployer || 0) + (commonDeductions.agnipath || 0);
+        
+        // Standard deduction + Common deductions in new regime
+        const totalDeductions = config.standardDeductionNew + commonTotal;
         const taxableIncome = Math.max(0, grossIncome - totalDeductions);
 
-        // Calculate tax
-        let tax = calculateTaxOnSlabs(taxableIncome, config.newSlabs);
+        // Calculate tax on slabs with breakdown
+        const { tax: taxOnIncome, breakdown: slabBreakdown } = calculateTaxOnSlabs(taxableIncome, config.newSlabs);
 
-        // Apply rebate u/s 87A
-        if (taxableIncome <= config.rebateLimitNew) {
-            tax = 0;
+        // Calculate rebate u/s 87A
+        let rebate = 0;
+        let taxAfterRebate = taxOnIncome;
+        if (taxableIncome <= config.rebateLimitNew && taxOnIncome > 0) {
+            rebate = taxOnIncome;
+            taxAfterRebate = 0;
         }
 
         // Add surcharge (capped at 25% for new regime)
-        const surcharge = calculateSurcharge(grossIncome, tax, true);
-        tax += surcharge;
+        const surcharge = calculateSurcharge(grossIncome, taxAfterRebate, true);
+        const taxWithSurcharge = taxAfterRebate + surcharge;
 
         // Add cess
-        const cess = tax * CESS_RATE;
-        tax += cess;
+        const cess = taxWithSurcharge * CESS_RATE;
+        const totalTax = taxWithSurcharge + cess;
 
         return {
             grossIncome,
             totalDeductions,
             taxableIncome,
-            tax: Math.round(tax),
-            effectiveRate: grossIncome > 0 ? ((tax / grossIncome) * 100).toFixed(2) : 0
+            taxOnIncome: Math.round(taxOnIncome),
+            slabBreakdown,
+            rebate: Math.round(rebate),
+            cess: Math.round(cess),
+            tax: Math.round(totalTax),
+            effectiveRate: grossIncome > 0 ? ((totalTax / grossIncome) * 100).toFixed(2) : 0
         };
     }
 
@@ -351,6 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const income = sanitizeNumber(taxIncome.value, 0);
         const age = taxAge.value;
 
+        // Old regime specific deductions
         const deductions = {
             c80: sanitizeNumber(deduction80C.value, 0),
             ccd80: sanitizeNumber(deduction80CCD.value, 0),
@@ -360,24 +410,54 @@ document.addEventListener('DOMContentLoaded', () => {
             homeLoan: sanitizeNumber(deductionHomeLoan.value, 0),
             other: sanitizeNumber(deductionOther.value, 0)
         };
+        
+        // Common deductions (apply to both regimes)
+        const commonDeductions = {
+            npsEmployer: sanitizeNumber(deductionNPSEmployer ? deductionNPSEmployer.value : 0, 0),
+            agnipath: sanitizeNumber(deductionAgnipath ? deductionAgnipath.value : 0, 0)
+        };
 
         // Calculate both regimes
-        const oldResult = calculateOldRegimeTax(income, age, deductions);
-        const newResult = calculateNewRegimeTax(income);
+        const oldResult = calculateOldRegimeTax(income, age, deductions, commonDeductions);
+        const newResult = calculateNewRegimeTax(income, commonDeductions);
 
         // Update Old Regime display
         document.getElementById('oldGrossIncome').textContent = formatIndianCurrency(oldResult.grossIncome);
+        document.getElementById('oldStandardDeduction').textContent = formatIndianCurrency(oldResult.standardDeduction);
+        document.getElementById('oldChapterVIA').textContent = formatIndianCurrency(oldResult.chapterVIADeductions);
         document.getElementById('oldDeductions').textContent = formatIndianCurrency(oldResult.totalDeductions);
         document.getElementById('oldTaxableIncome').textContent = formatIndianCurrency(oldResult.taxableIncome);
+        document.getElementById('oldTaxOnIncome').textContent = formatIndianCurrency(oldResult.taxOnIncome);
+        document.getElementById('oldCess').textContent = formatIndianCurrency(oldResult.cess);
         document.getElementById('oldTaxPayable').textContent = formatIndianCurrency(oldResult.tax);
         document.getElementById('oldEffectiveRate').textContent = oldResult.effectiveRate + '%';
+        
+        // Show/hide rebate row for Old Regime
+        const oldRebateRow = document.getElementById('oldRebateRow');
+        if (oldResult.rebate > 0) {
+            oldRebateRow.style.display = 'flex';
+            document.getElementById('oldRebate').textContent = '-' + formatIndianCurrency(oldResult.rebate);
+        } else {
+            oldRebateRow.style.display = 'none';
+        }
 
         // Update New Regime display
         document.getElementById('newGrossIncome').textContent = formatIndianCurrency(newResult.grossIncome);
         document.getElementById('newDeductions').textContent = formatIndianCurrency(newResult.totalDeductions);
         document.getElementById('newTaxableIncome').textContent = formatIndianCurrency(newResult.taxableIncome);
+        document.getElementById('newTaxOnIncome').textContent = formatIndianCurrency(newResult.taxOnIncome);
+        document.getElementById('newCess').textContent = formatIndianCurrency(newResult.cess);
         document.getElementById('newTaxPayable').textContent = formatIndianCurrency(newResult.tax);
         document.getElementById('newEffectiveRate').textContent = newResult.effectiveRate + '%';
+        
+        // Show/hide rebate row for New Regime
+        const newRebateRow = document.getElementById('newRebateRow');
+        if (newResult.rebate > 0) {
+            newRebateRow.style.display = 'flex';
+            document.getElementById('newRebate').textContent = '-' + formatIndianCurrency(newResult.rebate);
+        } else {
+            newRebateRow.style.display = 'none';
+        }
 
         // Update recommendation
         const recommendationEl = document.getElementById('taxRecommendation');
@@ -403,6 +483,161 @@ document.addEventListener('DOMContentLoaded', () => {
         // Highlight better regime card
         document.querySelector('.old-regime').classList.toggle('better', oldResult.tax < newResult.tax);
         document.querySelector('.new-regime').classList.toggle('better', newResult.tax < oldResult.tax);
+        
+        // Update slab breakdown
+        updateSlabBreakdown(oldResult, newResult);
+        
+        // Update investment suggestions  
+        updateInvestmentSuggestions(deductions);
+        
+        // Store current results for export/save
+        window.currentTaxResults = { oldResult, newResult, income, age, deductions, commonDeductions, fy: taxFY.value };
+        
+        // Validate and show warnings for exceeding max limits
+        validateDeductionLimits();
+    }
+    
+    // Update slab-wise breakdown display
+    function updateSlabBreakdown(oldResult, newResult) {
+        const oldContainer = document.getElementById('oldSlabBreakdown');
+        const newContainer = document.getElementById('newSlabBreakdown');
+        
+        if (oldContainer) {
+            oldContainer.innerHTML = renderSlabBreakdown(oldResult.slabBreakdown, oldResult.taxOnIncome);
+        }
+        if (newContainer) {
+            newContainer.innerHTML = renderSlabBreakdown(newResult.slabBreakdown, newResult.taxOnIncome);
+        }
+    }
+    
+    function renderSlabBreakdown(breakdown, total) {
+        if (!breakdown || breakdown.length === 0) {
+            return '<div class="slab-row"><span class="slab-range">No tax applicable</span><span class="slab-tax">₹0</span></div>';
+        }
+        
+        let html = breakdown.map(slab => {
+            const ratePercent = (slab.rate * 100).toFixed(0);
+            const rangeText = `₹${formatCompact(slab.from)} - ₹${formatCompact(slab.to)} @ ${ratePercent}%`;
+            return `<div class="slab-row">
+                <span class="slab-range">${rangeText}</span>
+                <span class="slab-tax">${formatIndianCurrency(slab.tax)}</span>
+            </div>`;
+        }).join('');
+        
+        html += `<div class="slab-row total">
+            <span class="slab-range">Total</span>
+            <span class="slab-tax">${formatIndianCurrency(total)}</span>
+        </div>`;
+        
+        return html;
+    }
+    
+    function formatCompact(num) {
+        if (num >= 10000000) return (num / 10000000).toFixed(1) + 'Cr';
+        if (num >= 100000) return (num / 100000).toFixed(1) + 'L';
+        if (num >= 1000) return (num / 1000).toFixed(0) + 'K';
+        return num.toLocaleString('en-IN');
+    }
+    
+    // Update investment suggestions
+    function updateInvestmentSuggestions(deductions) {
+        const container = document.getElementById('suggestionsList');
+        if (!container) return;
+        
+        const suggestions = [];
+        
+        // Check 80C
+        const current80C = sanitizeNumber(deduction80C.value, 0);
+        if (current80C < 150000) {
+            suggestions.push({
+                label: '80C (PPF, ELSS, LIC)',
+                remaining: 150000 - current80C,
+                maxed: false
+            });
+        } else {
+            suggestions.push({ label: '80C Investments', remaining: 0, maxed: true });
+        }
+        
+        // Check 80CCD(1B) NPS
+        const currentNPS = sanitizeNumber(deduction80CCD.value, 0);
+        if (currentNPS < 50000) {
+            suggestions.push({
+                label: '80CCD(1B) NPS',
+                remaining: 50000 - currentNPS,
+                maxed: false
+            });
+        } else {
+            suggestions.push({ label: '80CCD(1B) NPS', remaining: 0, maxed: true });
+        }
+        
+        // Check 80D
+        const current80D = sanitizeNumber(deduction80D.value, 0);
+        const max80D = (taxAge.value === 'senior' || taxAge.value === 'supersenior') ? 100000 : 50000;
+        if (current80D < max80D) {
+            suggestions.push({
+                label: '80D Health Insurance',
+                remaining: max80D - current80D,
+                maxed: false
+            });
+        } else {
+            suggestions.push({ label: '80D Health Insurance', remaining: 0, maxed: true });
+        }
+        
+        // Check Home Loan
+        const currentHomeLoan = sanitizeNumber(deductionHomeLoan.value, 0);
+        if (currentHomeLoan < 200000 && currentHomeLoan > 0) {
+            suggestions.push({
+                label: 'Home Loan Interest (24b)',
+                remaining: 200000 - currentHomeLoan,
+                maxed: false
+            });
+        }
+        
+        // Render suggestions
+        const activeSuggestions = suggestions.filter(s => !s.maxed);
+        
+        if (activeSuggestions.length === 0) {
+            container.innerHTML = '<p class="no-suggestions">✓ All major deduction limits utilized!</p>';
+        } else {
+            container.innerHTML = suggestions.map(s => `
+                <div class="suggestion-item ${s.maxed ? 'maxed' : ''}">
+                    <span class="label">${s.label}</span>
+                    <span class="value">${s.maxed ? '✓ Maxed' : 'Can add ' + formatIndianCurrency(s.remaining)}</span>
+                </div>
+            `).join('');
+        }
+    }
+    
+    // Validate deduction limits and show warnings
+    function validateDeductionLimits() {
+        const warnings = [];
+        const deductionLimits = [
+            { id: 'deduction80C', max: 150000, name: '80C Investments' },
+            { id: 'deduction80CCD', max: 50000, name: '80CCD(1B) NPS' },
+            { id: 'deduction80D', max: 100000, name: '80D Health Insurance' },
+            { id: 'deduction80TTA', max: taxAge.value === 'senior' || taxAge.value === 'supersenior' ? 50000 : 10000, name: '80TTA Savings Interest' },
+            { id: 'deductionHomeLoan', max: 200000, name: 'Home Loan Interest' },
+        ];
+        
+        deductionLimits.forEach(({ id, max, name }) => {
+            const input = document.getElementById(id);
+            if (input) {
+                const value = parseFloat(input.value) || 0;
+                if (value > max) {
+                    warnings.push(`${name}: Capped at ₹${max.toLocaleString('en-IN')}`);
+                }
+            }
+        });
+        
+        const warningEl = document.getElementById('deductionWarning');
+        if (warningEl) {
+            if (warnings.length > 0) {
+                warningEl.innerHTML = '⚠️ ' + warnings.join(' | ');
+                warningEl.style.display = 'block';
+            } else {
+                warningEl.style.display = 'none';
+            }
+        }
     }
 
     // Input validation - prevent negative and special characters
@@ -436,7 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Initialize tooltips
+    // Initialize tooltips - simple approach, CSS handles positioning
     function initTooltips() {
         const tooltips = document.querySelectorAll('#tax .tooltip-icon');
         
@@ -490,10 +725,713 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Quick Actions
+    function initQuickActions() {
+        const maxOut80C = document.getElementById('maxOut80C');
+        const maxOut80D = document.getElementById('maxOut80D');
+        const maxOutNPS = document.getElementById('maxOutNPS');
+        const clearAllDeductions = document.getElementById('clearAllDeductions');
+        
+        if (maxOut80C) {
+            maxOut80C.addEventListener('click', () => {
+                deduction80C.value = 150000;
+                calculateTax();
+            });
+        }
+        
+        if (maxOut80D) {
+            maxOut80D.addEventListener('click', () => {
+                const max80D = (taxAge.value === 'senior' || taxAge.value === 'supersenior') ? 50000 : 25000;
+                deduction80D.value = max80D;
+                calculateTax();
+            });
+        }
+        
+        if (maxOutNPS) {
+            maxOutNPS.addEventListener('click', () => {
+                deduction80CCD.value = 50000;
+                calculateTax();
+            });
+        }
+        
+        if (clearAllDeductions) {
+            clearAllDeductions.addEventListener('click', () => {
+                const deductionInputs = [
+                    deduction80C, deduction80CCD, deduction80D,
+                    deduction80TTA, deductionHRA, deductionHomeLoan, deductionOther,
+                    deductionNPSEmployer, deductionAgnipath
+                ];
+                deductionInputs.forEach(input => {
+                    if (input) input.value = 0;
+                });
+                calculateTax();
+            });
+        }
+    }
+    
+    // Save & Load Scenarios
+    function initScenarios() {
+        const saveBtn = document.getElementById('saveScenario');
+        const viewBtn = document.getElementById('viewSavedScenarios');
+        const modal = document.getElementById('scenariosModal');
+        const closeBtn = document.getElementById('closeModal');
+        
+        if (saveBtn) {
+            saveBtn.addEventListener('click', saveCurrentScenario);
+        }
+        
+        if (viewBtn) {
+            viewBtn.addEventListener('click', () => {
+                renderSavedScenarios();
+                modal.classList.add('show');
+            });
+        }
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.classList.remove('show');
+            });
+        }
+        
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('show');
+                }
+            });
+        }
+    }
+    
+    function saveCurrentScenario() {
+        const title = prompt('Enter a name for this scenario:', `Scenario ${new Date().toLocaleDateString()}`);
+        if (!title) return;
+        
+        const results = window.currentTaxResults;
+        if (!results) {
+            alert('Please calculate tax first');
+            return;
+        }
+        
+        const scenario = {
+            id: Date.now(),
+            title: title,
+            date: new Date().toISOString(),
+            fy: results.fy,
+            income: results.income,
+            age: results.age,
+            deductions: results.deductions,
+            commonDeductions: results.commonDeductions,
+            oldTax: results.oldResult.tax,
+            newTax: results.newResult.tax,
+            recommendation: results.oldResult.tax < results.newResult.tax ? 'Old' : 'New'
+        };
+        
+        const scenarios = JSON.parse(localStorage.getItem('taxScenarios') || '[]');
+        scenarios.unshift(scenario);
+        
+        // Keep only last 10 scenarios
+        if (scenarios.length > 10) scenarios.pop();
+        
+        localStorage.setItem('taxScenarios', JSON.stringify(scenarios));
+        alert('Scenario saved successfully!');
+    }
+    
+    function renderSavedScenarios() {
+        const container = document.getElementById('savedScenariosList');
+        if (!container) return;
+        
+        const scenarios = JSON.parse(localStorage.getItem('taxScenarios') || '[]');
+        
+        if (scenarios.length === 0) {
+            container.innerHTML = '<p class="no-scenarios">No saved scenarios yet. Save your first calculation!</p>';
+            return;
+        }
+        
+        container.innerHTML = scenarios.map(s => `
+            <div class="saved-scenario-card" data-id="${s.id}">
+                <div class="scenario-header">
+                    <span class="scenario-title">${s.title}</span>
+                    <span class="scenario-date">${new Date(s.date).toLocaleDateString()}</span>
+                </div>
+                <div class="scenario-details">
+                    <div class="scenario-detail">
+                        <span class="label">FY</span>
+                        <span class="value">${s.fy}</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span class="label">Income</span>
+                        <span class="value">${formatIndianCurrency(s.income)}</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span class="label">Old Tax</span>
+                        <span class="value">${formatIndianCurrency(s.oldTax)}</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span class="label">New Tax</span>
+                        <span class="value">${formatIndianCurrency(s.newTax)}</span>
+                    </div>
+                </div>
+                <div class="scenario-actions">
+                    <button class="scenario-btn load" onclick="loadScenario(${s.id})">Load</button>
+                    <button class="scenario-btn delete" onclick="deleteScenario(${s.id})">Delete</button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Make functions available globally for onclick handlers
+    window.loadScenario = function(id) {
+        const scenarios = JSON.parse(localStorage.getItem('taxScenarios') || '[]');
+        const scenario = scenarios.find(s => s.id === id);
+        if (!scenario) return;
+        
+        // Load values
+        taxFY.value = scenario.fy;
+        taxIncome.value = scenario.income;
+        taxAge.value = scenario.age;
+        
+        if (scenario.deductions) {
+            deduction80C.value = scenario.deductions.c80 || 0;
+            deduction80CCD.value = scenario.deductions.ccd80 || 0;
+            deduction80D.value = scenario.deductions.d80 || 0;
+            deduction80TTA.value = scenario.deductions.tta80 || 0;
+            deductionHRA.value = scenario.deductions.hra || 0;
+            deductionHomeLoan.value = scenario.deductions.homeLoan || 0;
+            deductionOther.value = scenario.deductions.other || 0;
+        }
+        
+        if (scenario.commonDeductions) {
+            if (deductionNPSEmployer) deductionNPSEmployer.value = scenario.commonDeductions.npsEmployer || 0;
+            if (deductionAgnipath) deductionAgnipath.value = scenario.commonDeductions.agnipath || 0;
+        }
+        
+        // Close modal
+        document.getElementById('scenariosModal').classList.remove('show');
+        
+        // Recalculate
+        updateTaxSlabsDisplay();
+        calculateTax();
+    };
+    
+    window.deleteScenario = function(id) {
+        if (!confirm('Delete this scenario?')) return;
+        
+        let scenarios = JSON.parse(localStorage.getItem('taxScenarios') || '[]');
+        scenarios = scenarios.filter(s => s.id !== id);
+        localStorage.setItem('taxScenarios', JSON.stringify(scenarios));
+        
+        renderSavedScenarios();
+    };
+    
+    // Export PDF
+    function initExportPDF() {
+        const exportBtn = document.getElementById('exportPDF');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', exportAsPDF);
+        }
+    }
+    
+    function exportAsPDF() {
+        const results = window.currentTaxResults;
+        if (!results) {
+            alert('Please calculate tax first');
+            return;
+        }
+        
+        const config = getConfig();
+        const ageLabel = results.age === 'below60' ? 'Below 60 years' : 
+                         results.age === 'senior' ? '60-80 years (Senior Citizen)' : 
+                         '80+ years (Super Senior Citizen)';
+        
+        // Build deductions breakdown for Old Regime
+        const deductionRows = [];
+        
+        // Chapter VI-A Deductions
+        if (results.deductions.c80 > 0) {
+            deductionRows.push({
+                section: '80C',
+                description: 'Investments (PPF, ELSS, LIC, EPF, etc.)',
+                claimed: results.deductions.c80,
+                allowed: Math.min(results.deductions.c80, 150000)
+            });
+        }
+        if (results.deductions.ccd80 > 0) {
+            deductionRows.push({
+                section: '80CCD(1B)',
+                description: 'NPS Contribution (Additional)',
+                claimed: results.deductions.ccd80,
+                allowed: Math.min(results.deductions.ccd80, 50000)
+            });
+        }
+        if (results.deductions.d80 > 0) {
+            deductionRows.push({
+                section: '80D',
+                description: 'Health Insurance Premium',
+                claimed: results.deductions.d80,
+                allowed: Math.min(results.deductions.d80, 100000)
+            });
+        }
+        if (results.deductions.tta80 > 0) {
+            const maxTTA = (results.age === 'senior' || results.age === 'supersenior') ? 50000 : 10000;
+            deductionRows.push({
+                section: results.age === 'senior' || results.age === 'supersenior' ? '80TTB' : '80TTA',
+                description: 'Savings Account Interest',
+                claimed: results.deductions.tta80,
+                allowed: Math.min(results.deductions.tta80, maxTTA)
+            });
+        }
+        if (results.deductions.hra > 0) {
+            deductionRows.push({
+                section: '10(13A)',
+                description: 'House Rent Allowance (HRA)',
+                claimed: results.deductions.hra,
+                allowed: results.deductions.hra
+            });
+        }
+        if (results.deductions.homeLoan > 0) {
+            deductionRows.push({
+                section: '24(b)',
+                description: 'Home Loan Interest',
+                claimed: results.deductions.homeLoan,
+                allowed: Math.min(results.deductions.homeLoan, 200000)
+            });
+        }
+        if (results.deductions.other > 0) {
+            deductionRows.push({
+                section: 'Others',
+                description: '80E, 80G, 80EEB, etc.',
+                claimed: results.deductions.other,
+                allowed: results.deductions.other
+            });
+        }
+        
+        // Common deductions (both regimes)
+        const commonDeductionRows = [];
+        if (results.commonDeductions.npsEmployer > 0) {
+            commonDeductionRows.push({
+                section: '80CCD(2)',
+                description: "Employer's NPS Contribution",
+                amount: results.commonDeductions.npsEmployer
+            });
+        }
+        if (results.commonDeductions.agnipath > 0) {
+            commonDeductionRows.push({
+                section: '80CCH',
+                description: 'Agniveer Corpus Fund',
+                amount: results.commonDeductions.agnipath
+            });
+        }
+        
+        // Build slab breakdown HTML
+        const buildSlabHTML = (breakdown, total) => {
+            if (!breakdown || breakdown.length === 0) {
+                return '<tr><td colspan="3" style="text-align: center;">No tax applicable</td></tr>';
+            }
+            return breakdown.map(slab => {
+                const ratePercent = (slab.rate * 100).toFixed(0);
+                return `<tr>
+                    <td>${formatIndianCurrency(slab.from)} - ${formatIndianCurrency(slab.to)}</td>
+                    <td style="text-align: center;">${ratePercent}%</td>
+                    <td style="text-align: right;">${formatIndianCurrency(slab.tax)}</td>
+                </tr>`;
+            }).join('') + `<tr style="font-weight: bold; border-top: 2px solid #333;">
+                <td colspan="2">Total Tax on Income</td>
+                <td style="text-align: right;">${formatIndianCurrency(total)}</td>
+            </tr>`;
+        };
+        
+        // Create printable content - CA style computation sheet
+        const printContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Income Tax Computation - FY ${results.fy}</title>
+                <style>
+                    body { font-family: 'Times New Roman', serif; padding: 30px; color: #333; font-size: 12px; line-height: 1.5; }
+                    h1 { color: #1a472a; text-align: center; font-size: 18px; margin-bottom: 5px; }
+                    h2 { font-size: 14px; color: #1a472a; margin: 20px 0 10px 0; border-bottom: 1px solid #1a472a; padding-bottom: 5px; }
+                    h3 { font-size: 13px; color: #333; margin: 15px 0 8px 0; }
+                    .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #1a472a; padding-bottom: 15px; }
+                    .header p { margin: 3px 0; color: #666; }
+                    .assessee-info { background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                    .assessee-info table { width: 100%; }
+                    .assessee-info td { padding: 5px 10px; }
+                    .assessee-info td:first-child { font-weight: bold; width: 150px; }
+                    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #ddd; }
+                    th { background: #f0f7ef; font-weight: bold; }
+                    .amount { text-align: right; font-family: 'Courier New', monospace; }
+                    .section-col { width: 100px; font-weight: bold; color: #1a472a; }
+                    .total-row { font-weight: bold; background: #e8f5e9; }
+                    .total-row td { border-top: 2px solid #333; }
+                    .highlight { background: #fff3cd; }
+                    .final-tax { font-size: 14px; background: #1a472a; color: white; }
+                    .final-tax td { border: none; padding: 12px; }
+                    .comparison-section { display: flex; gap: 30px; margin-top: 30px; }
+                    .regime-section { flex: 1; }
+                    .regime-section h3 { background: #1a472a; color: white; padding: 10px; margin: 0; text-align: center; }
+                    .recommendation { text-align: center; margin: 25px 0; padding: 15px; background: #e8f5e9; border: 2px solid #1a472a; border-radius: 8px; }
+                    .recommendation strong { font-size: 14px; color: #1a472a; }
+                    .footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 10px; color: #666; }
+                    .note { font-size: 10px; color: #666; font-style: italic; margin-top: 5px; }
+                    .watermark { position: fixed; bottom: 20px; right: 30px; font-size: 10px; color: #ccc; }
+                    @media print { 
+                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        .page-break { page-break-before: always; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>INCOME TAX COMPUTATION STATEMENT</h1>
+                    <p>Assessment Year: ${parseInt(results.fy.split('-')[0]) + 1}-${parseInt(results.fy.split('-')[1]) + 1} | Financial Year: ${results.fy}</p>
+                    <p>Generated on: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                </div>
+                
+                <div class="assessee-info">
+                    <table>
+                        <tr>
+                            <td>Gross Annual Income:</td>
+                            <td>${formatIndianCurrency(results.income)}</td>
+                            <td>Age Category:</td>
+                            <td>${ageLabel}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- OLD TAX REGIME COMPUTATION -->
+                <h2>COMPUTATION UNDER OLD TAX REGIME</h2>
+                
+                <h3>A. Gross Total Income</h3>
+                <table>
+                    <tr>
+                        <td>Income from Salary / Business / Other Sources</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.grossIncome)}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>Gross Total Income</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.grossIncome)}</td>
+                    </tr>
+                </table>
+
+                <h3>B. Less: Standard Deduction u/s 16(ia)</h3>
+                <table>
+                    <tr>
+                        <td>Standard Deduction (Salaried Individuals)</td>
+                        <td class="amount">${formatIndianCurrency(config.standardDeductionOld)}</td>
+                    </tr>
+                </table>
+
+                ${deductionRows.length > 0 ? `
+                <h3>C. Less: Deductions under Chapter VI-A</h3>
+                <table>
+                    <tr>
+                        <th class="section-col">Section</th>
+                        <th>Particulars</th>
+                        <th style="text-align: right; width: 120px;">Claimed (₹)</th>
+                        <th style="text-align: right; width: 120px;">Allowed (₹)</th>
+                    </tr>
+                    ${deductionRows.map(d => `
+                    <tr>
+                        <td class="section-col">${d.section}</td>
+                        <td>${d.description}</td>
+                        <td class="amount">${formatIndianCurrency(d.claimed)}</td>
+                        <td class="amount">${formatIndianCurrency(d.allowed)}</td>
+                    </tr>
+                    `).join('')}
+                    <tr class="total-row">
+                        <td colspan="3">Total Chapter VI-A Deductions</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.chapterVIADeductions - (results.commonDeductions.npsEmployer + results.commonDeductions.agnipath))}</td>
+                    </tr>
+                </table>
+                ` : ''}
+
+                ${commonDeductionRows.length > 0 ? `
+                <h3>D. Less: Employer Contributions (Exempt)</h3>
+                <table>
+                    <tr>
+                        <th class="section-col">Section</th>
+                        <th>Particulars</th>
+                        <th style="text-align: right; width: 120px;">Amount (₹)</th>
+                    </tr>
+                    ${commonDeductionRows.map(d => `
+                    <tr>
+                        <td class="section-col">${d.section}</td>
+                        <td>${d.description}</td>
+                        <td class="amount">${formatIndianCurrency(d.amount)}</td>
+                    </tr>
+                    `).join('')}
+                    <tr class="total-row">
+                        <td colspan="2">Total Employer Contributions</td>
+                        <td class="amount">${formatIndianCurrency(results.commonDeductions.npsEmployer + results.commonDeductions.agnipath)}</td>
+                    </tr>
+                </table>
+                ` : ''}
+
+                <h3>E. Total Deductions Summary</h3>
+                <table>
+                    <tr>
+                        <td>Standard Deduction u/s 16(ia)</td>
+                        <td class="amount">${formatIndianCurrency(config.standardDeductionOld)}</td>
+                    </tr>
+                    <tr>
+                        <td>Chapter VI-A Deductions</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.chapterVIADeductions)}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>Total Deductions</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.totalDeductions)}</td>
+                    </tr>
+                </table>
+
+                <h3>F. Taxable Income</h3>
+                <table>
+                    <tr>
+                        <td>Gross Total Income</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.grossIncome)}</td>
+                    </tr>
+                    <tr>
+                        <td>Less: Total Deductions</td>
+                        <td class="amount">(${formatIndianCurrency(results.oldResult.totalDeductions)})</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>Total Taxable Income</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.taxableIncome)}</td>
+                    </tr>
+                </table>
+
+                <h3>G. Tax Computation (Slab-wise)</h3>
+                <table>
+                    <tr>
+                        <th>Income Slab</th>
+                        <th style="text-align: center;">Rate</th>
+                        <th style="text-align: right;">Tax (₹)</th>
+                    </tr>
+                    ${buildSlabHTML(results.oldResult.slabBreakdown, results.oldResult.taxOnIncome)}
+                </table>
+
+                <h3>H. Tax Payable</h3>
+                <table>
+                    <tr>
+                        <td>Tax on Total Income</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.taxOnIncome)}</td>
+                    </tr>
+                    ${results.oldResult.rebate > 0 ? `
+                    <tr class="highlight">
+                        <td>Less: Rebate u/s 87A (Income ≤ ₹5,00,000)</td>
+                        <td class="amount">(${formatIndianCurrency(results.oldResult.rebate)})</td>
+                    </tr>
+                    <tr>
+                        <td>Tax after Rebate</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.taxOnIncome - results.oldResult.rebate)}</td>
+                    </tr>
+                    ` : ''}
+                    <tr>
+                        <td>Add: Health & Education Cess @ 4%</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.cess)}</td>
+                    </tr>
+                    <tr class="final-tax">
+                        <td>TOTAL TAX PAYABLE</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.tax)}</td>
+                    </tr>
+                    <tr>
+                        <td>Effective Tax Rate</td>
+                        <td class="amount">${results.oldResult.effectiveRate}%</td>
+                    </tr>
+                </table>
+
+                <div class="page-break"></div>
+
+                <!-- NEW TAX REGIME COMPUTATION -->
+                <h2>COMPUTATION UNDER NEW TAX REGIME</h2>
+                
+                <h3>A. Gross Total Income</h3>
+                <table>
+                    <tr>
+                        <td>Income from Salary / Business / Other Sources</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.grossIncome)}</td>
+                    </tr>
+                </table>
+
+                <h3>B. Less: Deductions Allowed under New Regime</h3>
+                <table>
+                    <tr>
+                        <th class="section-col">Section</th>
+                        <th>Particulars</th>
+                        <th style="text-align: right;">Amount (₹)</th>
+                    </tr>
+                    <tr>
+                        <td class="section-col">16(ia)</td>
+                        <td>Standard Deduction</td>
+                        <td class="amount">${formatIndianCurrency(config.standardDeductionNew)}</td>
+                    </tr>
+                    ${commonDeductionRows.map(d => `
+                    <tr>
+                        <td class="section-col">${d.section}</td>
+                        <td>${d.description}</td>
+                        <td class="amount">${formatIndianCurrency(d.amount)}</td>
+                    </tr>
+                    `).join('')}
+                    <tr class="total-row">
+                        <td colspan="2">Total Deductions</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.totalDeductions)}</td>
+                    </tr>
+                </table>
+                <p class="note">Note: Under New Tax Regime, Chapter VI-A deductions (80C, 80D, etc.) and HRA exemption are NOT allowed.</p>
+
+                <h3>C. Taxable Income</h3>
+                <table>
+                    <tr>
+                        <td>Gross Total Income</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.grossIncome)}</td>
+                    </tr>
+                    <tr>
+                        <td>Less: Total Deductions</td>
+                        <td class="amount">(${formatIndianCurrency(results.newResult.totalDeductions)})</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>Total Taxable Income</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.taxableIncome)}</td>
+                    </tr>
+                </table>
+
+                <h3>D. Tax Computation (Slab-wise)</h3>
+                <table>
+                    <tr>
+                        <th>Income Slab</th>
+                        <th style="text-align: center;">Rate</th>
+                        <th style="text-align: right;">Tax (₹)</th>
+                    </tr>
+                    ${buildSlabHTML(results.newResult.slabBreakdown, results.newResult.taxOnIncome)}
+                </table>
+
+                <h3>E. Tax Payable</h3>
+                <table>
+                    <tr>
+                        <td>Tax on Total Income</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.taxOnIncome)}</td>
+                    </tr>
+                    ${results.newResult.rebate > 0 ? `
+                    <tr class="highlight">
+                        <td>Less: Rebate u/s 87A (Income ≤ ₹12,00,000)</td>
+                        <td class="amount">(${formatIndianCurrency(results.newResult.rebate)})</td>
+                    </tr>
+                    <tr>
+                        <td>Tax after Rebate</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.taxOnIncome - results.newResult.rebate)}</td>
+                    </tr>
+                    ` : ''}
+                    <tr>
+                        <td>Add: Health & Education Cess @ 4%</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.cess)}</td>
+                    </tr>
+                    <tr class="final-tax">
+                        <td>TOTAL TAX PAYABLE</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.tax)}</td>
+                    </tr>
+                    <tr>
+                        <td>Effective Tax Rate</td>
+                        <td class="amount">${results.newResult.effectiveRate}%</td>
+                    </tr>
+                </table>
+
+                <!-- COMPARISON & RECOMMENDATION -->
+                <h2>COMPARATIVE ANALYSIS</h2>
+                <table>
+                    <tr>
+                        <th>Particulars</th>
+                        <th style="text-align: right;">Old Regime (₹)</th>
+                        <th style="text-align: right;">New Regime (₹)</th>
+                        <th style="text-align: right;">Difference (₹)</th>
+                    </tr>
+                    <tr>
+                        <td>Gross Income</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.grossIncome)}</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.grossIncome)}</td>
+                        <td class="amount">-</td>
+                    </tr>
+                    <tr>
+                        <td>Total Deductions</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.totalDeductions)}</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.totalDeductions)}</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.totalDeductions - results.newResult.totalDeductions)}</td>
+                    </tr>
+                    <tr>
+                        <td>Taxable Income</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.taxableIncome)}</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.taxableIncome)}</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.taxableIncome - results.newResult.taxableIncome)}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>Total Tax Payable</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.tax)}</td>
+                        <td class="amount">${formatIndianCurrency(results.newResult.tax)}</td>
+                        <td class="amount">${formatIndianCurrency(results.oldResult.tax - results.newResult.tax)}</td>
+                    </tr>
+                    <tr>
+                        <td>Effective Tax Rate</td>
+                        <td class="amount">${results.oldResult.effectiveRate}%</td>
+                        <td class="amount">${results.newResult.effectiveRate}%</td>
+                        <td class="amount">${(parseFloat(results.oldResult.effectiveRate) - parseFloat(results.newResult.effectiveRate)).toFixed(2)}%</td>
+                    </tr>
+                </table>
+
+                <div class="recommendation">
+                    <strong>RECOMMENDATION: ${results.oldResult.tax < results.newResult.tax ? 'OLD TAX REGIME' : results.newResult.tax < results.oldResult.tax ? 'NEW TAX REGIME' : 'BOTH REGIMES ARE EQUAL'}</strong>
+                    <br><br>
+                    ${results.oldResult.tax !== results.newResult.tax ? 
+                        `Tax Savings: <strong>${formatIndianCurrency(Math.abs(results.oldResult.tax - results.newResult.tax))}</strong> per annum` : 
+                        'No difference in tax liability between both regimes.'}
+                </div>
+
+                <div class="footer">
+                    <p><strong>Disclaimer:</strong> This computation is for informational purposes only and should not be considered as tax advice. 
+                    Please consult a qualified Chartered Accountant or Tax Professional for accurate tax computation and filing.</p>
+                    <p>Generated by Multi-Function Calculator | ${new Date().toLocaleString('en-IN')}</p>
+                </div>
+                
+                <div class="watermark">Computer Generated Statement</div>
+            </body>
+            </html>
+        `;
+        
+        // Open print dialog
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // Wait for content to load then print
+        setTimeout(() => {
+            printWindow.print();
+        }, 250);
+    }
+    
+    // Clickable tax rows to expand slab breakdown
+    function initClickableTaxRows() {
+        const oldTaxRow = document.getElementById('oldTaxOnIncomeRow');
+        const newTaxRow = document.getElementById('newTaxOnIncomeRow');
+        
+        const expandSlab = () => {
+            const slabSection = document.querySelector('[data-target="slabBreakdown"]');
+            if (slabSection) {
+                const section = slabSection.closest('.collapsible-section');
+                if (section) {
+                    section.classList.remove('collapsed');
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        };
+        
+        if (oldTaxRow) oldTaxRow.addEventListener('click', expandSlab);
+        if (newTaxRow) newTaxRow.addEventListener('click', expandSlab);
+    }
+
     // Apply input validation to all inputs
     const allInputs = [
         taxIncome, deduction80C, deduction80CCD, deduction80D,
-        deduction80TTA, deductionHRA, deductionHomeLoan, deductionOther
+        deduction80TTA, deductionHRA, deductionHomeLoan, deductionOther,
+        deductionNPSEmployer, deductionAgnipath
     ];
 
     allInputs.forEach(input => {
@@ -536,8 +1474,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize
     initTooltips();
     initCollapsibles();
+    initQuickActions();
+    initScenarios();
+    initExportPDF();
+    initClickableTaxRows();
     updateTaxSlabsDisplay();
     
     // Initial calculation
     calculateTax();
-});
+    }
+    
+    // Run init when DOM is ready, or immediately if already ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();

@@ -3,7 +3,7 @@
  * Enables offline functionality
  */
 
-const CACHE_NAME = 'calculator-v10';
+const CACHE_NAME = 'calculator-v24';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

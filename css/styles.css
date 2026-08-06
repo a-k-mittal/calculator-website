@@ -203,6 +203,20 @@ body {
     flex-direction: column;
 }
 
+/* Responsive container for larger screens */
+@media (min-width: 768px) {
+    .container {
+        max-width: 900px;
+        padding: var(--spacing-lg);
+    }
+}
+
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1100px;
+    }
+}
+
 /* Theme Toggle */
 .theme-toggle {
     position: fixed;
@@ -413,6 +427,8 @@ body[data-theme="dark"] .moon-icon {
     border-radius: var(--radius-lg);
     box-shadow: var(--neu-shadow);
     padding: var(--spacing-lg);
+    max-width: 500px;
+    margin: 0 auto;
 }
 
 .display {
@@ -509,6 +525,8 @@ body[data-theme="dark"] .moon-icon {
     border-radius: var(--radius-lg);
     box-shadow: var(--neu-shadow);
     padding: var(--spacing-lg);
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 .converter h2 {
@@ -556,6 +574,17 @@ body[data-theme="dark"] .moon-icon {
 .converter select:focus {
     outline: none;
     box-shadow: var(--neu-shadow-inset), 0 0 0 2px var(--accent);
+}
+
+/* Invalid input styling (when value exceeds max) */
+.converter input:invalid,
+.converter input:out-of-range {
+    box-shadow: var(--neu-shadow-inset), 0 0 0 2px #e74c3c;
+}
+
+.converter input:invalid:focus,
+.converter input:out-of-range:focus {
+    box-shadow: var(--neu-shadow-inset), 0 0 0 2px #e74c3c;
 }
 
 .converter select {
@@ -1035,13 +1064,15 @@ body[data-theme="dark"] .converter select {
     padding-bottom: 0;
 }
 
-/* Tax deductions section with scrollbar */
+/* Tax deductions section - no scroll, page scrolls instead */
 #tax .collapsible-content {
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: 350px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--accent-primary) var(--bg-secondary);
+    overflow: visible;
+    max-height: none;
+}
+
+/* Tax tooltips need higher z-index to appear above header */
+#tax .tooltip-text {
+    z-index: 10000;
 }
 
 #tax .collapsible-content::-webkit-scrollbar {
@@ -1349,8 +1380,8 @@ body[data-theme="dark"] .converter select {
     opacity: 0;
     position: absolute;
     bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    transform: translateX(-8px);
     background: var(--bg-primary);
     color: var(--text-primary);
     padding: var(--spacing-sm) var(--spacing-md);
@@ -1372,8 +1403,8 @@ body[data-theme="dark"] .converter select {
     content: '';
     position: absolute;
     top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 16px;
+    transform: none;
     border: 6px solid transparent;
     border-top-color: var(--bg-primary);
 }
@@ -1405,6 +1436,16 @@ body[data-theme="dark"] .converter select {
     font-style: italic;
     padding: var(--spacing-sm) var(--spacing-md);
     margin: 0;
+}
+
+.deduction-warning {
+    font-size: 0.8rem;
+    color: #e74c3c;
+    font-weight: 500;
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin: 0;
+    background: rgba(231, 76, 60, 0.1);
+    border-radius: var(--radius-sm);
 }
 
 /* Tax Comparison Cards */
@@ -1464,6 +1505,16 @@ body[data-theme="dark"] .converter select {
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--accent);
+}
+
+.tax-result-row.sub-item {
+    padding-left: var(--spacing-md);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.tax-result-row.sub-item span:last-child {
+    font-weight: 500;
 }
 
 /* Tax Recommendation */
@@ -1555,7 +1606,51 @@ body[data-theme="dark"] .converter select {
     font-style: italic;
 }
 
-/* Tax Calculator Responsive */
+/* Tax Calculator Responsive - Desktop */
+@media (min-width: 768px) {
+    .tax-inputs {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .deductions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .tax-comparison {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .tax-action-buttons {
+        justify-content: center;
+    }
+    
+    .tax-action-btn {
+        flex: 0 1 auto;
+        min-width: 150px;
+    }
+    
+    .investment-suggestions {
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .slab-breakdown-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .deductions-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .tax-slabs-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Tax Calculator Responsive - Mobile */
 @media (max-width: 600px) {
     .tax-comparison {
         grid-template-columns: 1fr;
@@ -1602,13 +1697,364 @@ select:focus-visible {
     outline-offset: 2px;
 }
 
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.quick-action-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--bg-primary);
+    box-shadow: var(--neu-shadow-sm);
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.quick-action-btn:hover {
+    box-shadow: var(--neu-shadow);
+    background: var(--accent);
+    color: white;
+}
+
+.quick-action-btn:active {
+    box-shadow: var(--neu-shadow-pressed);
+}
+
+/* Tax Action Buttons */
+.tax-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+.tax-action-btn {
+    flex: 1;
+    min-width: 100px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    box-shadow: var(--neu-shadow-sm);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.tax-action-btn:hover {
+    box-shadow: var(--neu-shadow);
+    color: var(--accent);
+}
+
+.tax-action-btn:active {
+    box-shadow: var(--neu-shadow-pressed);
+}
+
+/* Investment Suggestions */
+.investment-suggestions {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--neu-shadow-inset);
+}
+
+.investment-suggestions h4 {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.suggestions-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.suggestion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+}
+
+.suggestion-item .label {
+    color: var(--text-secondary);
+}
+
+.suggestion-item .value {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.suggestion-item.maxed .value {
+    color: var(--text-secondary);
+    font-weight: normal;
+}
+
+.no-suggestions {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: var(--spacing-sm);
+}
+
+/* Slab Breakdown */
+.slab-breakdown-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.slab-breakdown-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-md);
+}
+
+.slab-breakdown-card h4 {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    padding-bottom: var(--spacing-xs);
+    border-bottom: 1px solid var(--shadow-light);
+}
+
+.slab-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-xs) 0;
+    font-size: 0.8rem;
+    border-bottom: 1px dashed var(--shadow-light);
+}
+
+.slab-row:last-child {
+    border-bottom: none;
+}
+
+.slab-row .slab-range {
+    color: var(--text-secondary);
+}
+
+.slab-row .slab-tax {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.slab-row.total {
+    margin-top: var(--spacing-xs);
+    padding-top: var(--spacing-sm);
+    border-top: 2px solid var(--accent);
+    border-bottom: none;
+    font-weight: 600;
+}
+
+.slab-row.total .slab-tax {
+    color: var(--accent);
+}
+
+/* Clickable Tax Row */
+.tax-result-row.clickable {
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.tax-result-row.clickable:hover {
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+}
+
+/* Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10001;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-md);
+}
+
+.modal-overlay.show {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--neu-shadow);
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--shadow-light);
+}
+
+.modal-header h3 {
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.modal-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+    background: var(--error);
+    color: white;
+}
+
+.modal-body {
+    padding: var(--spacing-md) var(--spacing-lg);
+    overflow-y: auto;
+    flex: 1;
+}
+
+.no-scenarios {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: var(--spacing-lg);
+}
+
+/* Saved Scenario Card */
+.saved-scenario-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    box-shadow: var(--neu-shadow-sm);
+}
+
+.scenario-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.scenario-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.scenario-date {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.scenario-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-xs);
+    font-size: 0.8rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.scenario-detail {
+    display: flex;
+    justify-content: space-between;
+}
+
+.scenario-detail .label {
+    color: var(--text-secondary);
+}
+
+.scenario-detail .value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.scenario-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--shadow-light);
+}
+
+.scenario-btn {
+    flex: 1;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.scenario-btn.load {
+    background: var(--accent);
+    color: white;
+}
+
+.scenario-btn.load:hover {
+    background: var(--accent-hover);
+}
+
+.scenario-btn.delete {
+    background: var(--bg-primary);
+    color: var(--error);
+}
+
+.scenario-btn.delete:hover {
+    background: var(--error);
+    color: white;
+}
+
 /* Print styles */
 @media print {
     .theme-toggle,
     .tabs,
     .keypad,
-    .swap-btn {
-        display: none;
+    .swap-btn,
+    .quick-actions,
+    .tax-action-buttons,
+    .collapsible-header,
+    .modal-overlay {
+        display: none !important;
+    }
+    
+    .collapsible-content {
+        display: block !important;
     }
     
     body {
@@ -1620,5 +2066,30 @@ select:focus-visible {
     .converter {
         box-shadow: none;
         border: 1px solid #ccc;
+    }
+    
+    .tax-regime-card,
+    .tax-recommendation,
+    .investment-suggestions {
+        break-inside: avoid;
+    }
+}
+
+@media (max-width: 400px) {
+    .quick-actions {
+        gap: var(--spacing-xs);
+    }
+    
+    .quick-action-btn {
+        font-size: 0.7rem;
+        padding: var(--spacing-xs);
+    }
+    
+    .tax-action-buttons {
+        flex-direction: column;
+    }
+    
+    .tax-action-btn {
+        width: 100%;
     }
 }
