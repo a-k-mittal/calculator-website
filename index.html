@@ -84,6 +84,7 @@
             <button class="tab-btn" data-tab="currency">Currency</button>
             <button class="tab-btn" data-tab="weight">Weight</button>
             <button class="tab-btn" data-tab="temperature">Temp</button>
+            <button class="tab-btn" data-tab="tax">Tax</button>
         </nav>
 
         <!-- Tab Content -->
@@ -687,6 +688,190 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Income Tax Calculator Tab -->
+            <section id="tax" class="tab-panel">
+                <div class="converter tax-calculator">
+                    <h2>Income Tax Calculator</h2>
+                    <p class="tax-subtitle" id="taxSubtitle">Compare Old vs New Tax Regime (FY 2026-27)</p>
+                    
+                    <div class="tax-inputs">
+                        <div class="input-group">
+                            <label for="taxFY">
+                                Financial Year
+                                <span class="tooltip-icon" data-tooltip="Select the financial year for tax calculation. Tax slabs may vary between years.">ⓘ</span>
+                            </label>
+                            <select id="taxFY">
+                                <option value="2026-27" selected>FY 2026-27</option>
+                                <option value="2025-26">FY 2025-26</option>
+                                <option value="2024-25">FY 2024-25</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="taxIncome">
+                                Annual Income (₹)
+                                <span class="tooltip-icon" data-tooltip="Your total annual income from salary, business, or other sources before any deductions.">ⓘ</span>
+                            </label>
+                            <input type="number" id="taxIncome" placeholder="Enter annual income" value="1000000" inputmode="numeric" step="10000" min="0">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="taxAge">
+                                Age Group
+                                <span class="tooltip-icon" data-tooltip="Senior citizens (60-80) and super senior citizens (80+) get higher exemption limits under old regime.">ⓘ</span>
+                            </label>
+                            <select id="taxAge">
+                                <option value="below60" selected>Below 60 years</option>
+                                <option value="senior">60-80 years (Senior)</option>
+                                <option value="supersenior">80+ years (Super Senior)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Old Regime Deductions -->
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" data-target="oldRegimeDeductions">
+                            <span>Deductions (Old Regime Only)</span>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content" id="oldRegimeDeductions">
+                            <div class="deductions-grid">
+                                <div class="input-group">
+                                    <label for="deduction80C">
+                                        80C Investments
+                                        <span class="tooltip-icon" data-tooltip="PPF, ELSS, LIC Premium, EPF, NSC, Tax-saving FD, Tuition fees, Home loan principal. Max ₹1,50,000.">ⓘ</span>
+                                    </label>
+                                    <input type="number" id="deduction80C" placeholder="Max ₹1,50,000" value="150000" inputmode="numeric" step="1" min="0" max="150000">
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label for="deduction80CCD">
+                                        80CCD(1B) - NPS
+                                        <span class="tooltip-icon" data-tooltip="Additional deduction for NPS contribution over and above 80C limit. Max ₹50,000.">ⓘ</span>
+                                    </label>
+                                    <input type="number" id="deduction80CCD" placeholder="Max ₹50,000" value="0" inputmode="numeric" step="1" min="0" max="50000">
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label for="deduction80D">
+                                        80D - Health Insurance
+                                        <span class="tooltip-icon" data-tooltip="Self/Family: ₹25,000 (₹50,000 if senior). Parents: additional ₹25,000 (₹50,000 if senior). Max ₹1,00,000.">ⓘ</span>
+                                    </label>
+                                    <input type="number" id="deduction80D" placeholder="Max ₹1,00,000" value="25000" inputmode="numeric" step="1" min="0" max="100000">
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label for="deduction80TTA">
+                                        80TTA - Savings Interest
+                                        <span class="tooltip-icon" data-tooltip="Interest from savings account. Max ₹10,000 (₹50,000 for seniors under 80TTB).">ⓘ</span>
+                                    </label>
+                                    <input type="number" id="deduction80TTA" placeholder="Max ₹10,000" value="10000" inputmode="numeric" step="1" min="0" max="50000">
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label for="deductionHRA">
+                                        HRA Exemption
+                                        <span class="tooltip-icon" data-tooltip="House Rent Allowance exemption. Calculated as minimum of: Actual HRA, Rent paid - 10% of salary, or 50%/40% of salary (metro/non-metro).">ⓘ</span>
+                                    </label>
+                                    <input type="number" id="deductionHRA" placeholder="Enter HRA exemption" value="0" inputmode="numeric" step="1" min="0">
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label for="deductionHomeLoan">
+                                        Home Loan Interest (24b)
+                                        <span class="tooltip-icon" data-tooltip="Interest paid on home loan for self-occupied property. Max ₹2,00,000. For let-out property, no limit.">ⓘ</span>
+                                    </label>
+                                    <input type="number" id="deductionHomeLoan" placeholder="Max ₹2,00,000" value="0" inputmode="numeric" step="1" min="0" max="200000">
+                                </div>
+                                
+                                <div class="input-group">
+                                    <label for="deductionOther">
+                                        Other Deductions
+                                        <span class="tooltip-icon" data-tooltip="80E (Education loan interest), 80G (Donations), 80EEB (EV loan interest), etc.">ⓘ</span>
+                                    </label>
+                                    <input type="number" id="deductionOther" placeholder="Enter amount" value="0" inputmode="numeric" step="1" min="0">
+                                </div>
+                            </div>
+                            <p class="deduction-note">Note: Standard deduction of ₹50,000 (Old) / ₹75,000 (New) is applied automatically.</p>
+                        </div>
+                    </div>
+
+                    <!-- Tax Comparison Results -->
+                    <div class="tax-comparison">
+                        <div class="tax-regime-card old-regime">
+                            <h3>Old Tax Regime</h3>
+                            <div class="tax-result-row">
+                                <span>Gross Income</span>
+                                <span id="oldGrossIncome">₹0</span>
+                            </div>
+                            <div class="tax-result-row">
+                                <span>Total Deductions</span>
+                                <span id="oldDeductions">₹0</span>
+                            </div>
+                            <div class="tax-result-row">
+                                <span>Taxable Income</span>
+                                <span id="oldTaxableIncome">₹0</span>
+                            </div>
+                            <div class="tax-result-row highlight">
+                                <span>Tax Payable</span>
+                                <span id="oldTaxPayable">₹0</span>
+                            </div>
+                            <div class="tax-result-row">
+                                <span>Effective Tax Rate</span>
+                                <span id="oldEffectiveRate">0%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="tax-regime-card new-regime">
+                            <h3>New Tax Regime</h3>
+                            <div class="tax-result-row">
+                                <span>Gross Income</span>
+                                <span id="newGrossIncome">₹0</span>
+                            </div>
+                            <div class="tax-result-row">
+                                <span>Standard Deduction</span>
+                                <span id="newDeductions">₹75,000</span>
+                            </div>
+                            <div class="tax-result-row">
+                                <span>Taxable Income</span>
+                                <span id="newTaxableIncome">₹0</span>
+                            </div>
+                            <div class="tax-result-row highlight">
+                                <span>Tax Payable</span>
+                                <span id="newTaxPayable">₹0</span>
+                            </div>
+                            <div class="tax-result-row">
+                                <span>Effective Tax Rate</span>
+                                <span id="newEffectiveRate">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommendation -->
+                    <div class="tax-recommendation" id="taxRecommendation">
+                        <div class="recommendation-icon">💡</div>
+                        <div class="recommendation-text">
+                            <strong id="recommendedRegime">New Tax Regime</strong>
+                            <span id="taxSavings">saves you ₹0</span>
+                        </div>
+                    </div>
+
+                    <!-- Tax Slabs Info -->
+                    <div class="collapsible-section collapsed">
+                        <div class="collapsible-header" data-target="taxSlabsInfo">
+                            <span>View Tax Slabs</span>
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content" id="taxSlabsInfo">
+                            <div class="tax-slabs-container" id="taxSlabsDisplay">
+                                <!-- Dynamically populated based on selected FY -->
+                            </div>
+                            <p class="slab-note" id="slabNote">+ 4% Health & Education Cess on total tax. Rebate u/s 87A: No tax if taxable income ≤ ₹5L (Old) / ₹12L (New).</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <!-- Footer -->
@@ -703,6 +888,7 @@
     <script src="js/weight.js"></script>
     <script src="js/temperature.js"></script>
     <script src="js/investment.js"></script>
+    <script src="js/tax.js"></script>
     <script>
         // Tab Navigation
         document.querySelectorAll('.tab-btn').forEach(btn => {

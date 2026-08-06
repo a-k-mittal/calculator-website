@@ -1035,6 +1035,38 @@ body[data-theme="dark"] .converter select {
     padding-bottom: 0;
 }
 
+/* Tax deductions section with scrollbar */
+#tax .collapsible-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 350px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) var(--bg-secondary);
+}
+
+#tax .collapsible-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+#tax .collapsible-content::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+#tax .collapsible-content::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 4px;
+}
+
+#tax .collapsible-content::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-secondary);
+}
+
+#tax .collapsible-section.collapsed .collapsible-content {
+    overflow: hidden;
+    max-height: 0;
+}
+
 .collapsible-content .chart-container {
     margin: 0;
     border-radius: 0;
@@ -1272,6 +1304,293 @@ body[data-theme="dark"] .converter select {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+/* ==========================================
+   Income Tax Calculator Styles
+   ========================================== */
+
+.tax-calculator {
+    max-width: 100%;
+}
+
+.tax-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+}
+
+.tax-inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Tooltip Styles */
+.tooltip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    cursor: help;
+    position: relative;
+    vertical-align: middle;
+    margin-left: 4px;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.4;
+    width: max-content;
+    max-width: 250px;
+    box-shadow: var(--neu-shadow-md);
+    border: 1px solid var(--shadow-light);
+    z-index: 9999;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    margin-bottom: 8px;
+    pointer-events: none;
+}
+
+.tooltip-text::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--bg-primary);
+}
+
+.tooltip-icon:hover .tooltip-text,
+.tooltip-icon:focus .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Deductions Grid */
+.deductions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    position: relative;
+    z-index: 1;
+}
+
+.deductions-grid .input-group {
+    position: relative;
+    overflow: visible;
+}
+
+.deduction-note {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin: 0;
+}
+
+/* Tax Comparison Cards */
+.tax-comparison {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin: var(--spacing-lg) 0;
+}
+
+.tax-regime-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    box-shadow: var(--neu-shadow-sm);
+    transition: all var(--transition-fast);
+    border: 2px solid transparent;
+}
+
+.tax-regime-card.better {
+    border-color: var(--success);
+    box-shadow: 0 0 20px rgba(39, 174, 96, 0.2);
+}
+
+.tax-regime-card h3 {
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--shadow-light);
+}
+
+.tax-result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+    font-size: 0.9rem;
+}
+
+.tax-result-row span:first-child {
+    color: var(--text-secondary);
+}
+
+.tax-result-row span:last-child {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.tax-result-row.highlight {
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--shadow-light);
+}
+
+.tax-result-row.highlight span:last-child {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+/* Tax Recommendation */
+.tax-recommendation {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    margin-bottom: var(--spacing-lg);
+}
+
+.tax-recommendation.old-better {
+    background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(39, 174, 96, 0.05));
+    border: 1px solid var(--success);
+}
+
+.tax-recommendation.new-better {
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(74, 144, 226, 0.05));
+    border: 1px solid var(--accent);
+}
+
+.tax-recommendation.equal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--shadow-light);
+}
+
+.recommendation-icon {
+    font-size: 1.5rem;
+}
+
+.recommendation-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.recommendation-text strong {
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.recommendation-text span {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Tax Slabs Tables */
+.tax-slabs-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md);
+}
+
+.tax-slab-table h4 {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.tax-slab-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.tax-slab-table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-bottom: 1px solid var(--shadow-light);
+}
+
+.tax-slab-table td:first-child {
+    color: var(--text-secondary);
+}
+
+.tax-slab-table td:last-child {
+    text-align: right;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.slab-note {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin: 0;
+    font-style: italic;
+}
+
+/* Tax Calculator Responsive */
+@media (max-width: 600px) {
+    .tax-comparison {
+        grid-template-columns: 1fr;
+    }
+    
+    .deductions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .tooltip-text {
+        max-width: 200px;
+        font-size: 0.7rem;
+    }
+    
+    .tax-regime-card {
+        padding: var(--spacing-md);
+    }
+    
+    .tax-result-row {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .tax-inputs {
+        grid-template-columns: 1fr;
+    }
+    
+    .tax-slabs-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .tax-recommendation {
+        flex-direction: column;
+        text-align: center;
     }
 }
 
