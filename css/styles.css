@@ -1448,6 +1448,198 @@ body[data-theme="dark"] .converter select {
     border-radius: var(--radius-sm);
 }
 
+/* Dynamic Deductions Selector */
+.dynamic-deductions-container {
+    grid-column: 1 / -1;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    border: 1px dashed var(--shadow-light);
+}
+
+.dynamic-deductions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.dynamic-deductions-header label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.add-deduction-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all var(--transition-fast);
+}
+
+.add-deduction-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.add-deduction-btn span {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.deduction-selector {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.deduction-selector select {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 12px;
+    border: 1px solid var(--shadow-light);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.confirm-deduction-btn,
+.cancel-deduction-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all var(--transition-fast);
+}
+
+.confirm-deduction-btn {
+    background: var(--success);
+    color: white;
+}
+
+.confirm-deduction-btn:hover {
+    background: #219a52;
+}
+
+.cancel-deduction-btn {
+    background: #e74c3c;
+    color: white;
+}
+
+.cancel-deduction-btn:hover {
+    background: #c0392b;
+}
+
+.added-deductions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.deduction-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    background: var(--bg-primary);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--shadow-light);
+    flex-wrap: wrap;
+}
+
+.deduction-item .section-badge {
+    background: var(--accent);
+    color: white;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.deduction-item .deduction-name {
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    min-width: 120px;
+}
+
+.deduction-item input {
+    width: 120px;
+    padding: 6px 10px;
+    border: 1px solid var(--shadow-light);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    text-align: right;
+}
+
+.deduction-item input:focus {
+    border-color: var(--accent);
+    outline: none;
+}
+
+.deduction-item input.invalid {
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+}
+
+.deduction-item .limit-info {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.deduction-item .limit-exceeded {
+    color: #e74c3c;
+    font-weight: 500;
+}
+
+.deduction-item .remove-btn {
+    background: transparent;
+    border: none;
+    color: #e74c3c;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.deduction-item .remove-btn:hover {
+    background: rgba(231, 76, 60, 0.1);
+}
+
+.deduction-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--shadow-light);
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.deduction-total-row #totalOtherDeductions {
+    font-size: 1.1rem;
+}
+
 /* Tax Comparison Cards */
 .tax-comparison {
     display: grid;
@@ -1517,6 +1709,30 @@ body[data-theme="dark"] .converter select {
     font-weight: 500;
 }
 
+/* Monthly Take-Home Highlight */
+.tax-result-row.monthly-highlight {
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm) 0;
+    border-top: 1px dashed var(--shadow-light);
+    background: linear-gradient(135deg, rgba(39, 174, 96, 0.05), transparent);
+    border-radius: var(--radius-sm);
+    padding-left: var(--spacing-sm);
+    margin-left: calc(-1 * var(--spacing-sm));
+    margin-right: calc(-1 * var(--spacing-sm));
+    padding-right: var(--spacing-sm);
+}
+
+.tax-result-row.monthly-highlight span:first-child {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.tax-result-row.monthly-highlight span:last-child {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--success);
+}
+
 /* Tax Recommendation */
 .tax-recommendation {
     display: flex;
@@ -1525,7 +1741,47 @@ body[data-theme="dark"] .converter select {
     padding: var(--spacing-md) var(--spacing-lg);
     border-radius: var(--radius-md);
     background: var(--bg-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Break-Even Analysis */
+.break-even-analysis {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
     margin-bottom: var(--spacing-lg);
+    font-size: 0.85rem;
+}
+
+.break-even-analysis.old-better {
+    background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(39, 174, 96, 0.05));
+    border: 1px solid var(--success);
+}
+
+.break-even-analysis.new-better {
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(74, 144, 226, 0.05));
+    border: 1px solid var(--accent);
+}
+
+.break-even-analysis.equal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--shadow-light);
+}
+
+.break-even-icon {
+    font-size: 1.2rem;
+}
+
+.break-even-text {
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.break-even-text strong {
+    color: var(--text-primary);
 }
 
 .tax-recommendation.old-better {

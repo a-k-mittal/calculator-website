@@ -800,13 +800,41 @@
                                     <input type="number" id="deductionHomeLoan" placeholder="Max ₹2,00,000" value="0" inputmode="numeric" step="1" min="0" max="200000">
                                 </div>
                                 
-                                <div class="input-group">
-                                    <label for="deductionOther">
-                                        Other Deductions
-                                        <span class="tooltip-icon" data-tooltip="80E (Education loan interest), 80G (Donations), 80EEB (EV loan interest), etc.">ⓘ</span>
-                                    </label>
-                                    <input type="number" id="deductionOther" placeholder="Enter amount" value="0" inputmode="numeric" step="1" min="0">
+                                <!-- Dynamic Other Deductions Selector -->
+                                <div class="dynamic-deductions-container">
+                                    <div class="dynamic-deductions-header">
+                                        <label>Other Deductions
+                                            <span class="tooltip-icon" data-tooltip="Add specific deductions like 80E (Education loan), 80G (Donations), 80GG (Rent paid), 80EEB (EV loan), etc.">ⓘ</span>
+                                        </label>
+                                        <button type="button" class="add-deduction-btn" id="addDeductionBtn" title="Add Deduction">
+                                            <span>+</span> Add Deduction
+                                        </button>
+                                    </div>
+                                    <div class="deduction-selector" id="deductionSelector" style="display: none;">
+                                        <select id="deductionDropdown">
+                                            <option value="">-- Select Deduction --</option>
+                                            <option value="80E">80E - Education Loan Interest (No Limit)</option>
+                                            <option value="80G">80G - Donations (50%/100% of donation)</option>
+                                            <option value="80GG">80GG - Rent Paid (Max ₹60,000)</option>
+                                            <option value="80EEB">80EEB - EV Loan Interest (Max ₹1,50,000)</option>
+                                            <option value="80DDB">80DDB - Medical Treatment (Max ₹1,00,000)</option>
+                                            <option value="80U">80U - Disability (₹75,000/₹1,25,000)</option>
+                                            <option value="80RRB">80RRB - Royalty on Patents (Max ₹3,00,000)</option>
+                                            <option value="80QQB">80QQB - Royalty on Books (Max ₹3,00,000)</option>
+                                        </select>
+                                        <button type="button" class="confirm-deduction-btn" id="confirmDeductionBtn">✓</button>
+                                        <button type="button" class="cancel-deduction-btn" id="cancelDeductionBtn">✕</button>
+                                    </div>
+                                    <div class="added-deductions" id="addedDeductions">
+                                        <!-- Dynamically added deduction items will appear here -->
+                                    </div>
+                                    <div class="deduction-total-row" id="deductionTotalRow" style="display: none;">
+                                        <span>Total Other Deductions:</span>
+                                        <span id="totalOtherDeductions">₹0</span>
+                                    </div>
                                 </div>
+                                <!-- Hidden input for backward compatibility -->
+                                <input type="hidden" id="deductionOther" value="0">
                             </div>
                             <p class="deduction-note">Note: Standard deduction of ₹50,000 (Old) / ₹75,000 (New) is applied automatically.</p>
                             <p class="deduction-warning" id="deductionWarning" style="display: none;"></p>
@@ -873,6 +901,10 @@
                                 <span>Less: Rebate u/s 87A</span>
                                 <span id="oldRebate">₹0</span>
                             </div>
+                            <div class="tax-result-row sub-item" id="oldSurchargeRow" style="display: none;">
+                                <span>Surcharge</span>
+                                <span id="oldSurcharge">₹0</span>
+                            </div>
                             <div class="tax-result-row sub-item">
                                 <span>Health & Edu Cess (4%)</span>
                                 <span id="oldCess">₹0</span>
@@ -884,6 +916,10 @@
                             <div class="tax-result-row">
                                 <span>Effective Tax Rate</span>
                                 <span id="oldEffectiveRate">0%</span>
+                            </div>
+                            <div class="tax-result-row monthly-highlight">
+                                <span>📅 Monthly Take-Home</span>
+                                <span id="oldMonthlyTakeHome">₹0</span>
                             </div>
                         </div>
                         
@@ -909,6 +945,10 @@
                                 <span>Less: Rebate u/s 87A</span>
                                 <span id="newRebate">₹0</span>
                             </div>
+                            <div class="tax-result-row sub-item" id="newSurchargeRow" style="display: none;">
+                                <span>Surcharge</span>
+                                <span id="newSurcharge">₹0</span>
+                            </div>
                             <div class="tax-result-row sub-item">
                                 <span>Health & Edu Cess (4%)</span>
                                 <span id="newCess">₹0</span>
@@ -921,6 +961,10 @@
                                 <span>Effective Tax Rate</span>
                                 <span id="newEffectiveRate">0%</span>
                             </div>
+                            <div class="tax-result-row monthly-highlight">
+                                <span>📅 Monthly Take-Home</span>
+                                <span id="newMonthlyTakeHome">₹0</span>
+                            </div>
                         </div>
                     </div>
 
@@ -930,6 +974,14 @@
                         <div class="recommendation-text">
                             <strong id="recommendedRegime">New Tax Regime</strong>
                             <span id="taxSavings">saves you ₹0</span>
+                        </div>
+                    </div>
+
+                    <!-- Break-Even Analysis -->
+                    <div class="break-even-analysis" id="breakEvenSection">
+                        <div class="break-even-icon">📊</div>
+                        <div class="break-even-text">
+                            <span id="breakEvenText">Enter income to see analysis</span>
                         </div>
                     </div>
 

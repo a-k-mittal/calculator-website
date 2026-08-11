@@ -194,6 +194,45 @@
         { limit: Infinity, rate: 0.37 }
     ];
 
+    // Dynamic Deductions Configuration
+    const DEDUCTION_CONFIG = {
+        '80E': { name: 'Education Loan Interest', limit: Infinity, description: 'Interest on education loan for higher studies' },
+        '80G': { name: 'Donations', limit: Infinity, description: '50% or 100% deduction on donations to approved funds' },
+        '80GG': { name: 'Rent Paid (No HRA)', limit: 60000, description: 'Rent paid when not receiving HRA' },
+        '80EEB': { name: 'EV Loan Interest', limit: 150000, description: 'Interest on loan for electric vehicle' },
+        '80DDB': { name: 'Medical Treatment', limit: 100000, description: 'Expenses for specified diseases' },
+        '80U': { name: 'Disability', limit: 125000, description: '₹75,000 (40-80%) or ₹1,25,000 (>80% disability)' },
+        '80RRB': { name: 'Royalty on Patents', limit: 300000, description: 'Income from patents registered in India' },
+        '80QQB': { name: 'Royalty on Books', limit: 300000, description: 'Income from authoring books' }
+    };
+
+    // Store for dynamically added deductions
+    let addedDeductions = {};
+    const STORAGE_KEY = 'taxCalc_dynamicDeductions';
+
+    // Load deductions from localStorage
+    function loadDynamicDeductions() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                addedDeductions = JSON.parse(saved);
+                renderAddedDeductions();
+                updateOtherDeductionsTotal();
+            }
+        } catch (e) {
+            console.warn('Could not load saved deductions:', e);
+        }
+    }
+
+    // Save deductions to localStorage
+    function saveDynamicDeductions() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(addedDeductions));
+        } catch (e) {
+            console.warn('Could not save deductions:', e);
+        }
+    }
+
     // Get current FY config
     function getConfig() {
         const fy = taxFY ? taxFY.value : '2026-27';
@@ -334,6 +373,9 @@
         // Add cess
         const cess = taxWithSurcharge * CESS_RATE;
         const totalTax = taxWithSurcharge + cess;
+        
+        // Monthly take-home
+        const monthlyTakeHome = Math.round((grossIncome - totalTax) / 12);
 
         return {
             grossIncome,
@@ -344,8 +386,10 @@
             taxOnIncome: Math.round(taxOnIncome),
             slabBreakdown,
             rebate: Math.round(rebate),
+            surcharge: Math.round(surcharge),
             cess: Math.round(cess),
             tax: Math.round(totalTax),
+            monthlyTakeHome,
             effectiveRate: grossIncome > 0 ? ((totalTax / grossIncome) * 100).toFixed(2) : 0
         };
     }
@@ -380,6 +424,9 @@
         // Add cess
         const cess = taxWithSurcharge * CESS_RATE;
         const totalTax = taxWithSurcharge + cess;
+        
+        // Monthly take-home
+        const monthlyTakeHome = Math.round((grossIncome - totalTax) / 12);
 
         return {
             grossIncome,
@@ -388,10 +435,197 @@
             taxOnIncome: Math.round(taxOnIncome),
             slabBreakdown,
             rebate: Math.round(rebate),
+            surcharge: Math.round(surcharge),
             cess: Math.round(cess),
             tax: Math.round(totalTax),
+            monthlyTakeHome,
             effectiveRate: grossIncome > 0 ? ((totalTax / grossIncome) * 100).toFixed(2) : 0
         };
+    }
+
+    // Render added deductions to the UI
+    function renderAddedDeductions() {
+        const container = document.getElementById('addedDeductions');
+        const totalRow = document.getElementById('deductionTotalRow');
+        const dropdown = document.getElementById('deductionDropdown');
+        
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        // Update dropdown - disable already added options
+        if (dropdown) {
+            Array.from(dropdown.options).forEach(option => {
+                if (option.value) {
+                    option.disabled = addedDeductions.hasOwnProperty(option.value);
+                }
+            });
+        }
+        
+        const sections = Object.keys(addedDeductions);
+        
+        if (sections.length === 0) {
+            if (totalRow) totalRow.style.display = 'none';
+            return;
+        }
+        
+        sections.forEach(section => {
+            const config = DEDUCTION_CONFIG[section];
+            const amount = addedDeductions[section];
+            const isExceeded = config.limit !== Infinity && amount > config.limit;
+            
+            const item = document.createElement('div');
+            item.className = 'deduction-item';
+            item.dataset.section = section;
+            
+            const limitText = config.limit === Infinity ? 'No limit' : `Max ₹${config.limit.toLocaleString('en-IN')}`;
+            
+            item.innerHTML = `
+                <span class="section-badge">${section}</span>
+                <span class="deduction-name">${config.name}</span>
+                <input type="number" class="deduction-amount-input" value="${amount}" 
+                       placeholder="Enter amount" min="0" ${config.limit !== Infinity ? `max="${config.limit}"` : ''}
+                       inputmode="numeric" step="1">
+                <span class="limit-info ${isExceeded ? 'limit-exceeded' : ''}">${limitText}</span>
+                <button type="button" class="remove-btn" title="Remove">×</button>
+            `;
+            
+            container.appendChild(item);
+        });
+        
+        if (totalRow) totalRow.style.display = 'flex';
+    }
+
+    // Update the total other deductions
+    function updateOtherDeductionsTotal() {
+        let total = 0;
+        
+        Object.keys(addedDeductions).forEach(section => {
+            const config = DEDUCTION_CONFIG[section];
+            const amount = addedDeductions[section];
+            // Apply limit if applicable
+            if (config.limit !== Infinity) {
+                total += Math.min(amount, config.limit);
+            } else {
+                total += amount;
+            }
+        });
+        
+        // Update hidden input for backward compatibility
+        if (deductionOther) {
+            deductionOther.value = total;
+        }
+        
+        // Update total display
+        const totalDisplay = document.getElementById('totalOtherDeductions');
+        if (totalDisplay) {
+            totalDisplay.textContent = formatIndianCurrency(total);
+        }
+        
+        return total;
+    }
+
+    // Initialize dynamic deductions UI
+    function initDynamicDeductions() {
+        const addBtn = document.getElementById('addDeductionBtn');
+        const selector = document.getElementById('deductionSelector');
+        const dropdown = document.getElementById('deductionDropdown');
+        const confirmBtn = document.getElementById('confirmDeductionBtn');
+        const cancelBtn = document.getElementById('cancelDeductionBtn');
+        const container = document.getElementById('addedDeductions');
+        
+        if (!addBtn || !selector || !dropdown) return;
+        
+        // Show selector when add button is clicked
+        addBtn.addEventListener('click', () => {
+            selector.style.display = 'flex';
+            dropdown.value = '';
+            dropdown.focus();
+        });
+        
+        // Confirm adding deduction
+        confirmBtn.addEventListener('click', () => {
+            const section = dropdown.value;
+            if (section && !addedDeductions.hasOwnProperty(section)) {
+                addedDeductions[section] = 0;
+                saveDynamicDeductions();
+                renderAddedDeductions();
+                updateOtherDeductionsTotal();
+                calculateTax();
+            }
+            selector.style.display = 'none';
+        });
+        
+        // Cancel adding
+        cancelBtn.addEventListener('click', () => {
+            selector.style.display = 'none';
+        });
+        
+        // Handle input changes and remove buttons (event delegation)
+        container.addEventListener('input', (e) => {
+            if (e.target.classList.contains('deduction-amount-input')) {
+                const item = e.target.closest('.deduction-item');
+                const section = item.dataset.section;
+                const value = sanitizeNumber(e.target.value, 0);
+                const config = DEDUCTION_CONFIG[section];
+                
+                addedDeductions[section] = value;
+                
+                // Visual feedback for limit exceeded
+                const limitInfo = item.querySelector('.limit-info');
+                const input = e.target;
+                
+                if (config.limit !== Infinity && value > config.limit) {
+                    input.classList.add('invalid');
+                    limitInfo.classList.add('limit-exceeded');
+                } else {
+                    input.classList.remove('invalid');
+                    limitInfo.classList.remove('limit-exceeded');
+                }
+                
+                saveDynamicDeductions();
+                updateOtherDeductionsTotal();
+                calculateTax();
+            }
+        });
+        
+        container.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-btn')) {
+                const item = e.target.closest('.deduction-item');
+                const section = item.dataset.section;
+                
+                delete addedDeductions[section];
+                saveDynamicDeductions();
+                renderAddedDeductions();
+                updateOtherDeductionsTotal();
+                calculateTax();
+            }
+        });
+        
+        // Load saved deductions
+        loadDynamicDeductions();
+    }
+
+    // Get deductions breakdown for PDF export
+    function getDynamicDeductionsBreakdown() {
+        const breakdown = [];
+        
+        Object.keys(addedDeductions).forEach(section => {
+            const config = DEDUCTION_CONFIG[section];
+            const claimed = addedDeductions[section];
+            const allowed = config.limit === Infinity ? claimed : Math.min(claimed, config.limit);
+            
+            if (claimed > 0) {
+                breakdown.push({
+                    section: section,
+                    description: config.name,
+                    claimed: claimed,
+                    allowed: allowed
+                });
+            }
+        });
+        
+        return breakdown;
     }
 
     // Main calculation function
@@ -431,6 +665,7 @@
         document.getElementById('oldCess').textContent = formatIndianCurrency(oldResult.cess);
         document.getElementById('oldTaxPayable').textContent = formatIndianCurrency(oldResult.tax);
         document.getElementById('oldEffectiveRate').textContent = oldResult.effectiveRate + '%';
+        document.getElementById('oldMonthlyTakeHome').textContent = formatIndianCurrency(oldResult.monthlyTakeHome);
         
         // Show/hide rebate row for Old Regime
         const oldRebateRow = document.getElementById('oldRebateRow');
@@ -439,6 +674,15 @@
             document.getElementById('oldRebate').textContent = '-' + formatIndianCurrency(oldResult.rebate);
         } else {
             oldRebateRow.style.display = 'none';
+        }
+        
+        // Show/hide surcharge row for Old Regime
+        const oldSurchargeRow = document.getElementById('oldSurchargeRow');
+        if (oldResult.surcharge > 0) {
+            oldSurchargeRow.style.display = 'flex';
+            document.getElementById('oldSurcharge').textContent = formatIndianCurrency(oldResult.surcharge);
+        } else {
+            oldSurchargeRow.style.display = 'none';
         }
 
         // Update New Regime display
@@ -449,6 +693,7 @@
         document.getElementById('newCess').textContent = formatIndianCurrency(newResult.cess);
         document.getElementById('newTaxPayable').textContent = formatIndianCurrency(newResult.tax);
         document.getElementById('newEffectiveRate').textContent = newResult.effectiveRate + '%';
+        document.getElementById('newMonthlyTakeHome').textContent = formatIndianCurrency(newResult.monthlyTakeHome);
         
         // Show/hide rebate row for New Regime
         const newRebateRow = document.getElementById('newRebateRow');
@@ -457,6 +702,15 @@
             document.getElementById('newRebate').textContent = '-' + formatIndianCurrency(newResult.rebate);
         } else {
             newRebateRow.style.display = 'none';
+        }
+        
+        // Show/hide surcharge row for New Regime
+        const newSurchargeRow = document.getElementById('newSurchargeRow');
+        if (newResult.surcharge > 0) {
+            newSurchargeRow.style.display = 'flex';
+            document.getElementById('newSurcharge').textContent = formatIndianCurrency(newResult.surcharge);
+        } else {
+            newSurchargeRow.style.display = 'none';
         }
 
         // Update recommendation
@@ -484,6 +738,9 @@
         document.querySelector('.old-regime').classList.toggle('better', oldResult.tax < newResult.tax);
         document.querySelector('.new-regime').classList.toggle('better', newResult.tax < oldResult.tax);
         
+        // Update break-even analysis
+        updateBreakEvenAnalysis(income, age, newResult, commonDeductions);
+        
         // Update slab breakdown
         updateSlabBreakdown(oldResult, newResult);
         
@@ -495,6 +752,95 @@
         
         // Validate and show warnings for exceeding max limits
         validateDeductionLimits();
+    }
+    
+    // Update break-even analysis
+    function updateBreakEvenAnalysis(income, age, newResult, commonDeductions) {
+        const breakEvenEl = document.getElementById('breakEvenText');
+        const breakEvenSection = document.getElementById('breakEvenSection');
+        
+        if (!breakEvenEl || income <= 0) {
+            if (breakEvenEl) breakEvenEl.textContent = 'Enter income to see analysis';
+            return;
+        }
+        
+        const config = getConfig();
+        const newTax = newResult.tax;
+        
+        // Calculate: What deduction amount would make Old Regime = New Regime tax?
+        // We need to find deduction X where Old Regime tax with X deductions = New Regime tax
+        
+        // Binary search for break-even deduction
+        let low = 0;
+        let high = income; // Max possible deduction
+        let breakEvenDeduction = -1;
+        
+        for (let i = 0; i < 50; i++) { // 50 iterations for precision
+            const mid = Math.floor((low + high) / 2);
+            
+            // Calculate old regime tax with mid deduction
+            const testDeductions = { c80: Math.min(mid, 150000), ccd80: 0, d80: 0, tta80: 0, hra: 0, homeLoan: 0, other: Math.max(0, mid - 150000) };
+            const oldTestResult = calculateOldRegimeTax(income, age, testDeductions, commonDeductions);
+            
+            if (Math.abs(oldTestResult.tax - newTax) < 100) {
+                breakEvenDeduction = mid;
+                break;
+            }
+            
+            if (oldTestResult.tax > newTax) {
+                low = mid + 1; // Need more deductions
+            } else {
+                high = mid - 1; // Less deductions needed
+            }
+        }
+        
+        // Get current total deductions claimed
+        const currentDeductions = 
+            sanitizeNumber(deduction80C.value, 0) +
+            sanitizeNumber(deduction80CCD.value, 0) +
+            sanitizeNumber(deduction80D.value, 0) +
+            sanitizeNumber(deduction80TTA.value, 0) +
+            sanitizeNumber(deductionHRA.value, 0) +
+            sanitizeNumber(deductionHomeLoan.value, 0) +
+            sanitizeNumber(deductionOther.value, 0);
+        
+        // Calculate old regime tax with current deductions
+        const currentOldDeductions = {
+            c80: sanitizeNumber(deduction80C.value, 0),
+            ccd80: sanitizeNumber(deduction80CCD.value, 0),
+            d80: sanitizeNumber(deduction80D.value, 0),
+            tta80: sanitizeNumber(deduction80TTA.value, 0),
+            hra: sanitizeNumber(deductionHRA.value, 0),
+            homeLoan: sanitizeNumber(deductionHomeLoan.value, 0),
+            other: sanitizeNumber(deductionOther.value, 0)
+        };
+        const currentOldResult = calculateOldRegimeTax(income, age, currentOldDeductions, commonDeductions);
+        
+        // Generate insight message
+        if (currentOldResult.tax < newTax) {
+            // Old regime is already better
+            const surplus = breakEvenDeduction > 0 ? currentDeductions - breakEvenDeduction : 0;
+            if (surplus > 50000) {
+                breakEvenEl.innerHTML = `Old Regime is better. You have <strong>${formatIndianCurrency(surplus)}</strong> buffer before New Regime becomes better.`;
+            } else {
+                breakEvenEl.innerHTML = `Old Regime is better with your current deductions.`;
+            }
+            breakEvenSection.className = 'break-even-analysis old-better';
+        } else if (currentOldResult.tax > newTax) {
+            // New regime is better
+            if (breakEvenDeduction > 0 && breakEvenDeduction > currentDeductions) {
+                const needed = breakEvenDeduction - currentDeductions;
+                breakEvenEl.innerHTML = `Need <strong>${formatIndianCurrency(needed)}</strong> more deductions for Old Regime to be better.`;
+            } else if (breakEvenDeduction <= 0) {
+                breakEvenEl.innerHTML = `New Regime is better for your income level regardless of deductions.`;
+            } else {
+                breakEvenEl.innerHTML = `New Regime saves you <strong>${formatIndianCurrency(newTax - currentOldResult.tax)}</strong>.`;
+            }
+            breakEvenSection.className = 'break-even-analysis new-better';
+        } else {
+            breakEvenEl.innerHTML = `Both regimes result in same tax. Any additional deduction makes Old Regime better.`;
+            breakEvenSection.className = 'break-even-analysis equal';
+        }
     }
     
     // Update slab-wise breakdown display
@@ -820,6 +1166,7 @@
             income: results.income,
             age: results.age,
             deductions: results.deductions,
+            dynamicDeductions: JSON.parse(JSON.stringify(addedDeductions)), // Save dynamic deductions separately
             commonDeductions: results.commonDeductions,
             oldTax: results.oldResult.tax,
             newTax: results.newResult.tax,
@@ -897,7 +1244,20 @@
             deduction80TTA.value = scenario.deductions.tta80 || 0;
             deductionHRA.value = scenario.deductions.hra || 0;
             deductionHomeLoan.value = scenario.deductions.homeLoan || 0;
-            deductionOther.value = scenario.deductions.other || 0;
+            
+            // Restore dynamic deductions if saved
+            if (scenario.dynamicDeductions) {
+                addedDeductions = scenario.dynamicDeductions;
+                saveDynamicDeductions();
+                renderAddedDeductions();
+                updateOtherDeductionsTotal();
+            } else {
+                // Clear dynamic deductions if not in scenario
+                addedDeductions = {};
+                saveDynamicDeductions();
+                renderAddedDeductions();
+                deductionOther.value = scenario.deductions.other || 0;
+            }
         }
         
         if (scenario.commonDeductions) {
@@ -996,14 +1356,12 @@
                 allowed: Math.min(results.deductions.homeLoan, 200000)
             });
         }
-        if (results.deductions.other > 0) {
-            deductionRows.push({
-                section: 'Others',
-                description: '80E, 80G, 80EEB, etc.',
-                claimed: results.deductions.other,
-                allowed: results.deductions.other
-            });
-        }
+        
+        // Add dynamic deductions (each section separately)
+        const dynamicDeductions = getDynamicDeductionsBreakdown();
+        dynamicDeductions.forEach(ded => {
+            deductionRows.push(ded);
+        });
         
         // Common deductions (both regimes)
         const commonDeductionRows = [];
@@ -1478,6 +1836,7 @@
     initScenarios();
     initExportPDF();
     initClickableTaxRows();
+    initDynamicDeductions();
     updateTaxSlabsDisplay();
     
     // Initial calculation
